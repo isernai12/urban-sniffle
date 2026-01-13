@@ -21,14 +21,20 @@
     {% endif %}
 
     <div style="display: grid; gap: 10px; margin-top: 15px;">
-        {% if user['hobby'] %}
-            <div><strong>হবি:</strong> {{ user['hobby'] }}</div>
+        {% if selected_hobbies %}
+            <div><strong>হবি:</strong> {{ selected_hobbies | join(', ') }}</div>
         {% endif %}
-        {% if user['categories'] %}
-            <div><strong>ক্যাটাগরি:</strong> {{ user['categories'] }}</div>
+        {% if selected_categories %}
+            <div><strong>ক্যাটাগরি:</strong> {{ selected_categories | join(', ') }}</div>
         {% endif %}
-        {% if user['social_links'] %}
-            <div><strong>সোশ্যাল:</strong> {{ user['social_links'] }}</div>
+        {% if user['facebook_link'] %}
+            <div><strong>ফেসবুক:</strong> <a href="{{ user['facebook_link'] }}" target="_blank">{{ user['facebook_link'] }}</a></div>
+        {% endif %}
+        {% if user['website_link'] %}
+            <div><strong>ওয়েবসাইট:</strong> <a href="{{ user['website_link'] }}" target="_blank">{{ user['website_link'] }}</a></div>
+        {% endif %}
+        {% if user['youtube_link'] %}
+            <div><strong>ইউটিউব:</strong> <a href="{{ user['youtube_link'] }}" target="_blank">{{ user['youtube_link'] }}</a></div>
         {% endif %}
     </div>
 </div>

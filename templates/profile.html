@@ -19,14 +19,34 @@
         <label>বায়ো</label>
         <textarea name="bio" rows="3" placeholder="আপনার সম্পর্কে লিখুন">{{ user['bio'] or '' }}</textarea>
 
-        <label>হবি</label>
-        <input type="text" name="hobby" value="{{ user['hobby'] or '' }}" placeholder="আপনার শখ">
+        <label>হবি (সর্বোচ্চ ৩টি সিলেক্ট করুন)</label>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px;">
+            {% for hobby in hobby_options %}
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem;">
+                    <input type="checkbox" name="hobby" value="{{ hobby }}" {% if hobby in selected_hobbies %}checked{% endif %}>
+                    {{ hobby }}
+                </label>
+            {% endfor %}
+        </div>
 
-        <label>আপনি যে ক্যাটাগরি নিয়ে কাজ করেন</label>
-        <input type="text" name="categories" value="{{ user['categories'] or '' }}" placeholder="যেমন: পাইথন, ডেটা, ওয়েব">
+        <label>ক্যাটাগরি (সর্বোচ্চ ৩টি সিলেক্ট করুন)</label>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px;">
+            {% for category in category_options %}
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem;">
+                    <input type="checkbox" name="categories" value="{{ category }}" {% if category in selected_categories %}checked{% endif %}>
+                    {{ category }}
+                </label>
+            {% endfor %}
+        </div>
 
-        <label>সোশ্যাল লিঙ্ক</label>
-        <input type="text" name="social_links" value="{{ user['social_links'] or '' }}" placeholder="আপনার ফেসবুক/লিংকডইন/ওয়েবসাইট">
+        <label>ফেসবুক লিংক</label>
+        <input type="url" name="facebook_link" value="{{ user['facebook_link'] or '' }}" placeholder="https://facebook.com/username">
+
+        <label>নিজস্ব ওয়েবসাইট</label>
+        <input type="url" name="website_link" value="{{ user['website_link'] or '' }}" placeholder="https://example.com">
+
+        <label>ইউটিউব লিংক</label>
+        <input type="url" name="youtube_link" value="{{ user['youtube_link'] or '' }}" placeholder="https://youtube.com/@channel">
 
         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
 

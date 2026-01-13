@@ -50,6 +50,9 @@ def init_db():
             hobby TEXT,
             categories TEXT,
             social_links TEXT,
+            facebook_link TEXT,
+            website_link TEXT,
+            youtube_link TEXT,
             profile_pic TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -118,6 +121,9 @@ def ensure_user_columns(conn):
         'hobby': 'TEXT',
         'categories': 'TEXT',
         'social_links': 'TEXT',
+        'facebook_link': 'TEXT',
+        'website_link': 'TEXT',
+        'youtube_link': 'TEXT',
         'profile_pic': 'TEXT',
         'created_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
     }
@@ -178,6 +184,29 @@ def calculate_read_time_minutes(content):
     plain_text = re.sub(r'<[^>]+>', ' ', content or '')
     words = re.findall(r'\w+', plain_text)
     return max(1, math.ceil(len(words) / 200))
+
+def parse_json_list(value):
+    if not value:
+        return []
+    if isinstance(value, list):
+        return value
+    try:
+        data = json.loads(value)
+        if isinstance(data, list):
+            return data
+    except json.JSONDecodeError:
+        pass
+    return [item.strip() for item in str(value).split(',') if item.strip()]
+
+CATEGORY_OPTIONS = [
+    'পাইথন', 'ওয়েব ডেভেলপমেন্ট', 'ডেটা সায়েন্স', 'এআই', 'মোবাইল',
+    'ডিজাইন', 'টেক নিউজ', 'সাইবার সিকিউরিটি', 'ডেভঅপস', 'ক্যারিয়ার'
+]
+
+HOBBY_OPTIONS = [
+    'ভ্রমণ', 'গান শোনা', 'বই পড়া', 'খেলাধুলা', 'ফটোগ্রাফি',
+    'রান্না', 'গেমিং', 'লেখালেখি', 'মুভি', 'ড্রইং'
+]
 
 def build_post_payload(rows):
     posts = []
@@ -433,6 +462,8 @@ def public_profile(user_id):
     if not user:
         conn.close()
         return "Not Found", 404
+    selected_categories = parse_json_list(user['categories'])
+    selected_hobbies = parse_json_list(user['hobby'])
     posts = conn.execute("""
         SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
         FROM posts
@@ -443,7 +474,14 @@ def public_profile(user_id):
     posts = build_post_payload(posts)
     all_categories = conn.execute("SELECT DISTINCT category FROM posts WHERE status='approved' AND is_active=1").fetchall()
     conn.close()
-    return render_template('public_profile.html', user=user, posts=posts, all_categories=all_categories)
+    return render_template(
+        'public_profile.html',
+        user=user,
+        posts=posts,
+        all_categories=all_categories,
+        selected_categories=selected_categories,
+        selected_hobbies=selected_hobbies
+    )
 
 # --- ইউজার এরিয়া (পোস্ট তৈরি ও ম্যানেজ) ---
 
@@ -863,10 +901,21 @@ def manage_profile():
         name = request.form.get('name') or None
         email = request.form.get('email') or None
         bio = request.form.get('bio') or None
-        hobby = request.form.get('hobby') or None
-        categories = request.form.get('categories') or None
-        social_links = request.form.get('social_links') or None
+        selected_hobbies = request.form.getlist('hobby')
+        selected_categories = request.form.getlist('categories')
+        facebook_link = request.form.get('facebook_link') or None
+        website_link = request.form.get('website_link') or None
+        youtube_link = request.form.get('youtube_link') or None
         profile_pic = user['profile_pic']
+
+        if len(selected_hobbies) > 3:
+            conn.close()
+            flash('সর্বোচ্চ ৩টি হবি সিলেক্ট করতে পারবেন।')
+            return redirect(url_for('manage_profile'))
+        if len(selected_categories) > 3:
+            conn.close()
+            flash('সর্বোচ্চ ৩টি ক্যাটাগরি সিলেক্ট করতে পারবেন।')
+            return redirect(url_for('manage_profile'))
 
         file = request.files.get('profile_pic')
         if file and allowed_file(file.filename):
@@ -891,16 +940,34 @@ def manage_profile():
 
         conn.execute('''
             UPDATE users
-            SET name = ?, email = ?, bio = ?, hobby = ?, categories = ?, social_links = ?, profile_pic = ?
+            SET name = ?, email = ?, bio = ?, hobby = ?, categories = ?, facebook_link = ?, website_link = ?, youtube_link = ?, profile_pic = ?
             WHERE id = ?
-        ''', (name, email, bio, hobby, categories, social_links, profile_pic, current_user.id))
+        ''', (
+            name,
+            email,
+            bio,
+            json.dumps(selected_hobbies),
+            json.dumps(selected_categories),
+            facebook_link,
+            website_link,
+            youtube_link,
+            profile_pic,
+            current_user.id
+        ))
         conn.commit()
         conn.close()
         flash('প্রোফাইল আপডেট করা হয়েছে।')
         return redirect(url_for('manage_profile'))
 
     conn.close()
-    return render_template('profile.html', user=user)
+    return render_template(
+        'profile.html',
+        user=user,
+        category_options=CATEGORY_OPTIONS,
+        hobby_options=HOBBY_OPTIONS,
+        selected_categories=parse_json_list(user['categories']),
+        selected_hobbies=parse_json_list(user['hobby'])
+    )
 
 # --- ইন্টারঅ্যাকশন রাউটস (লাইক, কমেন্ট, বুকমার্ক) ---
 @app.route('/like_post/<int:post_id>')
