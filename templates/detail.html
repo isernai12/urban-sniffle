@@ -1,229 +1,269 @@
 {% extends 'base.html' %}
 
-{% block header_extension %}
-    <div class="subRow">
-        <div class="subTitle" id="currentTitle">পাইথন ব্লগ</div>
-        {% if toc_items %}
-            <button class="moreBtn" id="moreBtn" type="button">More</button>
-        {% else %}
-            <div style="width: 78px;"></div>
-        {% endif %}
-    </div>
+{% block title %}{{ post['title'] }} • Writo{% endblock %}
 
-    <div class="moreList" id="moreList">
-        {% for item in toc_items %}
-            <div class="moreItem" onclick="jumpToSection('{{ item.id }}', '{{ item.title }}')">
-                {{ item.title }}
-            </div>
-        {% endfor %}
-    </div>
+{% block tracker_title %}
+  {{ post['title'] }}
+{% endblock %}
 
-    <style> .spacer { height: 160px !important; } </style>
+{% block toc_modal_content %}
+  {% if toc_items %}
+    <div style="display:grid; gap:10px;">
+      {% for item in toc_items %}
+        <button
+          type="button"
+          data-toc-item="1"
+          onclick="jumpToSection('{{ item.id }}', '{{ item.title | e }}')"
+          style="
+            width:100%;
+            text-align:left;
+            padding:12px 12px;
+            border-radius:16px;
+            border:1px solid rgba(0,0,0,0.10);
+            background: rgba(255,255,255,0.35);
+            color: var(--text);
+            cursor:pointer;
+            font-weight:700;
+            font-size:13px;
+          ">
+          {{ item.title }}
+        </button>
+      {% endfor %}
+    </div>
+    <div class="writoHint">যেকোনো সেকশনে যেতে ট্যাপ করুন।</div>
+  {% else %}
+    <div class="writoHint" style="margin:0">এই পোস্টে কোনো TOC নেই।</div>
+  {% endif %}
 {% endblock %}
 
 {% block content %}
-    <div id="reportModal" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h3>⚠️ রিপোর্ট করুন</h3>
-                <button class="close-modal" onclick="document.getElementById('reportModal').style.display='none'">&times;</button>
-            </div>
-            <form action="/report_content" method="post">
-                <input type="hidden" name="post_id" id="report_post_id">
-                <input type="hidden" name="comment_id" id="report_comment_id">
 
-                <label style="display: block; margin-bottom: 5px; font-weight: bold;">কারণ নির্বাচন করুন:</label>
-                <select name="reason" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 8px;">
-                    <option value="Spam">স্প্যাম / অপ্রয়োজনীয়</option>
-                    <option value="Abusive">খারাপ ভাষা / গালিগালাজ</option>
-                    <option value="Misleading">ভুল তথ্য</option>
-                    <option value="Harassment">হয়রানি</option>
-                </select>
+  <!-- ✅ Report modal (আপনার পুরোনোটা একই) -->
+  <section class="writoModal" id="reportModal" aria-hidden="true" style="top:72px;">
+    <div class="writoModalInner">
+      <div class="writoModalHead">
+        <div class="writoModalTitle"><span data-lucide="flag"></span> রিপোর্ট করুন</div>
+        <button class="writoModalClose" type="button" onclick="closeReportModal()" aria-label="Close">
+          <span data-lucide="x"></span>
+        </button>
+      </div>
 
-                <button type="submit" class="sub-btn" style="background: #ef4444;">জমা দিন</button>
-            </form>
-        </div>
+      <form action="/report_content" method="post">
+        <input type="hidden" name="post_id" id="report_post_id">
+        <input type="hidden" name="comment_id" id="report_comment_id">
+
+        <label style="display:block;margin-bottom:6px;font-weight:700;font-size:13px;color:var(--muted);">কারণ নির্বাচন করুন</label>
+        <select name="reason" style="width:100%;height:42px;border-radius:14px;border:1px solid rgba(0,0,0,0.10);background:rgba(255,255,255,0.55);padding:0 12px;color:var(--text);">
+          <option value="Spam">স্প্যাম / অপ্রয়োজনীয়</option>
+          <option value="Abusive">খারাপ ভাষা / গালিগালাজ</option>
+          <option value="Misleading">ভুল তথ্য</option>
+          <option value="Harassment">হয়রানি</option>
+        </select>
+
+        <button type="submit" style="margin-top:12px;width:100%;height:42px;border:none;border-radius:14px;background:#ef4444;color:#fff;font-weight:800;cursor:pointer;">
+          জমা দিন
+        </button>
+      </form>
     </div>
+  </section>
 
-    <div class="post">
-        <span class="tag">{{ post['category'] }}</span>
-        <h1 style="margin-top: 10px;">{{ post['title'] }}</h1>
-        <p style="color: #64748b;">{{ post['intro'] }}</p>
-        <div class="author-row">
-            <div class="author-avatar">
-                {% if post['author_profile_pic'] %}
-                    <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="profile">
-                {% else %}
-                    {{ post['author_display_name'][:1] }}
-                {% endif %}
-            </div>
-            <div>
-                <a class="author-name" href="{{ url_for('public_profile', user_id=post['user_id']) }}">{{ post['author_display_name'] }}</a>
-                <div class="author-meta">⏱️ {{ post['read_time'] }} পড়া</div>
-            </div>
-        </div>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+  <div class="post">
+    <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px;">{{ post['category'] }}</div>
 
-        {% if post['thumbnail'] %}
-            <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" style="margin-bottom: 20px;">
-        {% endif %}
+    <!-- ✅ এই H1 টাকে toc-marker বানালে স্ক্রল ট্র্যাকিং খুব সুন্দর কাজ করে -->
+    <h1 id="postTop" class="toc-marker" data-title="{{ post['title'] }}" style="font-size:20px;line-height:1.25;">
+      {{ post['title'] }}
+    </h1>
 
-        <div class="post-content" style="line-height: 1.8; font-size: 1.1em;">
-            {% autoescape false %}
-                {{ content | replace('\n', '<br>') }}
-            {% endautoescape %}
-        </div>
+    <p style="color: var(--muted); margin-top:8px; font-size:13px; line-height:1.6;">
+      {{ post['intro'] }}
+    </p>
 
-        <hr style="margin-top: 30px; border-color: #eee;">
-
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
-
-            <div style="display: flex; align-items: center; gap: 15px;">
-                {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('like_post', post_id=post['id']) }}" style="text-decoration: none;">
-                        {% if user_liked_post %} <span style="font-size: 24px;">❤️</span> {% else %} <span style="font-size: 24px;">🤍</span> {% endif %}
-                    </a>
-                {% else %}
-                    <a href="/login" style="text-decoration: none;"><span style="font-size: 24px;">🤍</span></a>
-                {% endif %}
-                <span style="font-weight: bold; color: #555;">{{ post_like_count }} Likes</span>
-
-                {% if current_user.is_authenticated %}
-                    <button onclick="openReportModal('post', '{{ post.id }}')" style="background: none; border: none; font-size: 0.9em; color: #ef4444; cursor: pointer; text-decoration: underline;">
-                        ⚠️ Report
-                    </button>
-                {% endif %}
-            </div>
-
-            <div>
-                {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('toggle_bookmark', post_id=post['id']) }}" style="text-decoration: none; font-size: 24px;" title="Bookmark">
-                        {% if is_bookmarked %} 🔖 {% else %} 🏷️ {% endif %}
-                    </a>
-                {% else %}
-                    <a href="/login" style="text-decoration: none; font-size: 24px;">🏷️</a>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <div class="post">
-        <h3 style="margin-bottom: 15px;">মন্তব্য সমূহ</h3>
-
-        {% if current_user.is_authenticated %}
-            <form action="{{ url_for('add_comment', post_id=post['id']) }}" method="post" style="margin-bottom: 30px;">
-                <textarea name="content" rows="3" placeholder="সুন্দর একটি মন্তব্য করুন..." required></textarea>
-                <button type="submit" class="sub-btn" style="width: auto; padding: 8px 20px;">মন্তব্য করুন</button>
-            </form>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
+      <div style="width:34px;height:34px;border-radius:50%;background:rgba(148,163,184,.25);overflow:hidden;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--text);">
+        {% if post['author_profile_pic'] %}
+          <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="profile"
+               style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
         {% else %}
-            <p style="background: #f0f9ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                মন্তব্য করতে <a href="/login">লগ ইন</a> করুন।
-            </p>
+          {{ post['author_display_name'][:1] }}
         {% endif %}
+      </div>
 
-        {% for comment in comments %}
-            <div style="border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px;">
-                <div style="display: flex; justify-content: space-between;">
-                    <strong style="color: #0f172a;">{{ comment['username'] }}</strong>
-                    <small style="color: #999;">{{ comment['created_at'] }}</small>
-                </div>
-                <p style="margin: 5px 0;">{{ comment['content'] }}</p>
-
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <div style="display: flex; align-items: center; gap: 5px;">
-                        {% if current_user.is_authenticated %}
-                            <a href="{{ url_for('like_comment', comment_id=comment['id'], post_id=post['id']) }}" style="text-decoration: none;">
-                                {% if comment['id'] in liked_comments %} <span style="font-size: 16px;">❤️</span> {% else %} <span style="font-size: 16px;">🤍</span> {% endif %}
-                            </a>
-                        {% else %} <span>🤍</span> {% endif %}
-                        <small style="color: #666;">{{ comment['like_count'] }}</small>
-                    </div>
-
-                    {% if current_user.is_authenticated %}
-                        <button onclick="openReportModal('comment', '{{ comment.id }}', '{{ post.id }}')" style="background: none; border: none; font-size: 0.8em; color: #ef4444; cursor: pointer;">
-                            ⚠️ Report
-                        </button>
-                    {% endif %}
-                </div>
-            </div>
-        {% else %}
-            <p style="color: #777; text-align: center;">কোনো মন্তব্য নেই। আপনিই প্রথম মন্তব্য করুন!</p>
-        {% endfor %}
+      <div style="min-width:0;">
+        <a href="{{ url_for('public_profile', user_id=post['user_id']) }}"
+           style="text-decoration:none;color:var(--text);font-weight:800;font-size:13px;display:inline-block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          {{ post['author_display_name'] }}
+        </a>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">⏱️ {{ post['read_time'] }} পড়া</div>
+      </div>
     </div>
 
-    {% if related_posts %}
-         <div class="section-header">
-            <span class="section-title">🔗 সম্পর্কিত পোস্ট</span>
-        </div>
-        <div style="display: grid; gap: 15px;">
-            {% for rel_post in related_posts %}
-                <div class="post" style="margin-bottom: 0; cursor: pointer;" onclick="window.location.href='{{ url_for('post_detail', post_id=rel_post['id'], slug=rel_post['slug']) }}'">
-                    <h3 style="font-size: 1rem; margin: 0;">{{ rel_post['title'] }}</h3>
-                    <div class="author-row" style="margin-top: 6px;">
-                        <div class="author-avatar" style="width: 28px; height: 28px; font-size: 0.75rem;">
-                            {% if rel_post['author_profile_pic'] %}
-                                <img src="{{ url_for('static', filename='profile_uploads/' + rel_post['author_profile_pic']) }}" alt="profile">
-                            {% else %}
-                                {{ rel_post['author_display_name'][:1] }}
-                            {% endif %}
-                        </div>
-                        <a class="author-name" style="font-size: 0.85rem;" href="{{ url_for('public_profile', user_id=rel_post['user_id']) }}">{{ rel_post['author_display_name'] }}</a>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
+    {% if post['thumbnail'] %}
+      <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}"
+           style="margin-top:14px;border-radius:16px;width:100%;height:auto;">
     {% endif %}
 
-    <script>
-        // TOC এবং স্ক্রল লজিক
-        const currentTitle = document.getElementById("currentTitle");
-        const moreListContainer = document.getElementById("moreList");
-        const moreBtnElement = document.getElementById("moreBtn");
+    <div class="post-content" style="margin-top:14px; line-height:1.85; font-size:15px;">
+      {% autoescape false %}
+        {{ content | replace('\n', '<br>') }}
+      {% endautoescape %}
+    </div>
 
-        if(currentTitle) currentTitle.textContent = "{{ post['title'] }}";
+    <hr style="margin-top:18px;border:none;border-top:1px solid rgba(148,163,184,.25);">
 
-        if (moreBtnElement && moreListContainer) {
-            moreBtnElement.addEventListener("click", () => {
-                moreListContainer.classList.toggle("open");
-                moreBtnElement.textContent = moreListContainer.classList.contains("open") ? "Close" : "More";
-            });
-        }
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('like_post', post_id=post['id']) }}" style="text-decoration:none;">
+            {% if user_liked_post %}<span style="font-size:22px;">❤️</span>{% else %}<span style="font-size:22px;">🤍</span>{% endif %}
+          </a>
+        {% else %}
+          <a href="/login" style="text-decoration:none;"><span style="font-size:22px;">🤍</span></a>
+        {% endif %}
+        <span style="font-weight:800;color:var(--muted);font-size:13px;">{{ post_like_count }} Likes</span>
 
-        function jumpToSection(id, title) {
-            if(moreListContainer) moreListContainer.classList.remove("open");
-            if(moreBtnElement) moreBtnElement.textContent = "More";
-            currentTitle.textContent = title;
-            const section = document.getElementById(id);
-            if (section) {
-                const offset = 170; 
-                const top = section.getBoundingClientRect().top + window.pageYOffset - offset;
-                window.scrollTo({ top: top, behavior: "smooth" });
-            }
-        }
+        {% if current_user.is_authenticated %}
+          <button onclick="openReportModal('post','{{ post.id }}')"
+                  style="background:none;border:none;font-size:12px;color:#ef4444;cursor:pointer;text-decoration:underline;font-weight:800;">
+            ⚠️ Report
+          </button>
+        {% endif %}
+      </div>
 
-        const markers = document.querySelectorAll('.toc-marker');
-        window.addEventListener('scroll', () => {
-            if (markers.length === 0) return;
-            let activeTitle = "{{ post['title'] }}";
-            markers.forEach(marker => {
-                const rect = marker.getBoundingClientRect();
-                if (rect.top < 220) { 
-                    activeTitle = marker.getAttribute('data-title');
-                }
-            });
-            if(currentTitle) currentTitle.textContent = activeTitle;
-        });
+      <div>
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('toggle_bookmark', post_id=post['id']) }}" style="text-decoration:none;font-size:22px;" title="Bookmark">
+            {% if is_bookmarked %} 🔖 {% else %} 🏷️ {% endif %}
+          </a>
+        {% else %}
+          <a href="/login" style="text-decoration:none;font-size:22px;">🏷️</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 
-        // রিপোর্ট মডাল ওপেন করার লজিক
-        function openReportModal(type, id, postId=null) {
-            document.getElementById('reportModal').style.display = 'block';
-            if (type === 'post') {
-                document.getElementById('report_post_id').value = id;
-                document.getElementById('report_comment_id').value = '';
-            } else {
-                document.getElementById('report_comment_id').value = id;
-                document.getElementById('report_post_id').value = postId; 
-            }
-        }
-    </script>
+  <div class="post">
+    <h3 style="margin-bottom:12px;">মন্তব্য সমূহ</h3>
+
+    {% if current_user.is_authenticated %}
+      <form action="{{ url_for('add_comment', post_id=post['id']) }}" method="post" style="margin-bottom:18px;">
+        <textarea name="content" rows="3" placeholder="সুন্দর একটি মন্তব্য করুন..." required
+                  style="width:100%;padding:12px;border-radius:14px;border:1px solid rgba(0,0,0,0.10);background:rgba(255,255,255,0.55);color:var(--text);"></textarea>
+        <button type="submit"
+                style="margin-top:10px;height:40px;padding:0 14px;border:none;border-radius:14px;background:var(--text);color:var(--bg);font-weight:800;cursor:pointer;">
+          মন্তব্য করুন
+        </button>
+      </form>
+    {% else %}
+      <div class="writoHint" style="margin:0;background:rgba(59,130,246,.10);border:1px solid rgba(59,130,246,.18);border-radius:16px;padding:12px;">
+        মন্তব্য করতে <a href="/login" style="color:var(--text);font-weight:800;">লগ ইন</a> করুন।
+      </div>
+    {% endif %}
+
+    {% for comment in comments %}
+      <div style="border-bottom:1px solid rgba(148,163,184,.20); padding-bottom:12px; margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;gap:10px;">
+          <strong style="color:var(--text);font-size:13px;">{{ comment['username'] }}</strong>
+          <small style="color:var(--muted);font-size:12px;">{{ comment['created_at'] }}</small>
+        </div>
+        <p style="margin:6px 0;color:var(--text);font-size:13px;line-height:1.6;">{{ comment['content'] }}</p>
+
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            {% if current_user.is_authenticated %}
+              <a href="{{ url_for('like_comment', comment_id=comment['id'], post_id=post['id']) }}" style="text-decoration:none;">
+                {% if comment['id'] in liked_comments %}<span style="font-size:16px;">❤️</span>{% else %}<span style="font-size:16px;">🤍</span>{% endif %}
+              </a>
+            {% else %}
+              <span style="font-size:16px;">🤍</span>
+            {% endif %}
+            <small style="color:var(--muted);font-weight:800;">{{ comment['like_count'] }}</small>
+          </div>
+
+          {% if current_user.is_authenticated %}
+            <button onclick="openReportModal('comment','{{ comment.id }}','{{ post.id }}')"
+                    style="background:none;border:none;font-size:12px;color:#ef4444;cursor:pointer;font-weight:800;">
+              ⚠️ Report
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    {% else %}
+      <p style="color:var(--muted);text-align:center;">কোনো মন্তব্য নেই। আপনিই প্রথম মন্তব্য করুন!</p>
+    {% endfor %}
+  </div>
+
+  {% if related_posts %}
+    <div class="post">
+      <h3 style="margin-bottom:10px;">🔗 সম্পর্কিত পোস্ট</h3>
+      <div style="display:grid;gap:10px;">
+        {% for rel_post in related_posts %}
+          <div class="post" style="margin:0;cursor:pointer;" onclick="window.location.href='{{ url_for('post_detail', post_id=rel_post['id'], slug=rel_post['slug']) }}'">
+            <h4 style="margin:0;font-size:14px;">{{ rel_post['title'] }}</h4>
+            <div style="margin-top:6px;font-size:12px;color:var(--muted);font-weight:700;">
+              {{ rel_post['author_display_name'] }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+{% endblock %}
+
+{% block body_scripts %}
+<script>
+  // ✅ TOC jump + tracker title update
+  const currentTitleEl = document.getElementById("currentSection");
+
+  function jumpToSection(id, title){
+    // close modals via overlay click simulation:
+    document.querySelectorAll("[data-writo-close]").forEach(btn => btn.click());
+
+    if (currentTitleEl) currentTitleEl.textContent = title;
+
+    const section = document.getElementById(id);
+    if (section){
+      const offset = document.body.classList.contains("compactHeader") ? 80 : 110;
+      const top = section.getBoundingClientRect().top + window.pageYOffset - offset;
+      window.scrollTo({ top, behavior:"smooth" });
+    }
+  }
+
+  // ✅ scroll-based section title
+  function updateActiveTitle(){
+    const markers = document.querySelectorAll(".toc-marker");
+    if (!markers.length) return;
+
+    let active = markers[0].getAttribute("data-title") || (currentTitleEl ? currentTitleEl.textContent : "Writo");
+    markers.forEach(m => {
+      const r = m.getBoundingClientRect();
+      if (r.top < 160) active = m.getAttribute("data-title") || active;
+    });
+    if (currentTitleEl) currentTitleEl.textContent = active;
+  }
+  updateActiveTitle();
+  window.addEventListener("scroll", () => requestAnimationFrame(updateActiveTitle), { passive:true });
+
+  // ✅ Report modal open/close (Writo modal style)
+  const reportModal = document.getElementById("reportModal");
+  function openReportModal(type, id, postId=null){
+    reportModal.classList.add("open");
+    document.body.classList.add("hasOverlay");
+
+    document.getElementById("report_post_id").value = (type === "post") ? id : (postId || "");
+    document.getElementById("report_comment_id").value = (type === "comment") ? id : "";
+  }
+  function closeReportModal(){
+    reportModal.classList.remove("open");
+    // overlay sync base.js দিয়েও হবে, তবুও safe:
+    if (!document.body.classList.contains("menuOpen")) {
+      document.body.classList.remove("hasOverlay");
+    }
+  }
+  // expose globally for inline onclick
+  window.openReportModal = openReportModal;
+  window.closeReportModal = closeReportModal;
+  window.jumpToSection = jumpToSection;
+</script>
 {% endblock %}
