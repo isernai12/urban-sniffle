@@ -5,7 +5,7 @@ import math
 import sqlite3
 import time
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, jsonify
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -217,24 +217,28 @@ def build_post_payload(rows):
         post['author_display_name'] = author_name
         post['author_profile_pic'] = row['author_profile_pic']
         post['read_time'] = calculate_read_time(post.get('content', ''))
-        minutes = calculate_read_time_minutes(post.get('content', ''))
-        post['read_time_en'] = f"{minutes} min"
-        created_at = post.get('created_at')
-        short_date = created_at
-        if created_at:
-            try:
-                parsed = datetime.fromisoformat(created_at)
-            except ValueError:
-                try:
-                    parsed = datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S")
-                except ValueError:
-                    parsed = None
-            if parsed:
-                short_date = f"{parsed.strftime('%b')} {parsed.day}"
-        post['short_date'] = short_date
+        post = format_post_meta(post)
         post['slug'] = post.get('slug') or slugify_text(post.get('title'))
         posts.append(post)
     return posts
+
+def format_post_meta(post):
+    minutes = calculate_read_time_minutes(post.get('content', ''))
+    post['read_time_en'] = f"{minutes} min"
+    created_at = post.get('created_at')
+    short_date = created_at
+    if created_at:
+        try:
+            parsed = datetime.fromisoformat(created_at)
+        except ValueError:
+            try:
+                parsed = datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                parsed = None
+        if parsed:
+            short_date = f"{parsed.strftime('%b')} {parsed.day}"
+    post['short_date'] = short_date
+    return post
 
 def build_writer_payload(rows):
     writers = []
@@ -243,6 +247,15 @@ def build_writer_payload(rows):
         writer['display_name'] = row['name'] or row['username']
         writers.append(writer)
     return writers
+
+def get_post_slug(conn, post_id):
+    row = conn.execute('SELECT slug, title FROM posts WHERE id = ?', (post_id,)).fetchone()
+    if not row:
+        return None
+    return row['slug'] or slugify_text(row['title'])
+
+def is_json_request():
+    return request.headers.get('X-Requested-With') == 'fetch' or request.accept_mimetypes['application/json']
 
 # গ্লোবাল ডাটা (বুকমার্ক) সব টেমপ্লেটে পাঠানোর জন্য
 @app.context_processor
@@ -828,8 +841,11 @@ def report_content():
                      (current_user.id, post_id, comment_id, reason))
         conn.commit()
         conn.close()
-        flash('আপনার রিপোর্ট এডমিনের কাছে পাঠানো হয়েছে।')
+        if not is_json_request():
+            flash('আপনার রিপোর্ট এডমিনের কাছে পাঠানো হয়েছে।')
 
+    if is_json_request():
+        return jsonify({"success": True})
     return redirect(request.referrer or url_for('index'))
 
 # --- ডিটেইলস পেজ ---
@@ -860,6 +876,7 @@ def post_detail(post_id, slug):
     post['author_display_name'] = post['author_name'] or post['username']
     post['read_time'] = calculate_read_time(post.get('content', ''))
     post['slug'] = post.get('slug') or slugify_text(post.get('title'))
+    post = format_post_meta(post)
 
     # অ্যাক্সেস লজিক:
     is_author = current_user.is_authenticated and post['user_id'] == current_user.id
@@ -903,7 +920,18 @@ def post_detail(post_id, slug):
     toc_items = json.loads(post['toc_data']) if post['toc_data'] else []
 
     conn.close()
-    return render_template('detail.html', post=post, content=post['content'], toc_items=toc_items, related_posts=related_posts, comments=comments_data, post_like_count=post_like_count, user_liked_post=user_liked_post, liked_comments=liked_comments, is_bookmarked=is_bookmarked)
+    return render_template(
+        'detail.html',
+        post=post,
+        content=post['content'],
+        toc_items=toc_items,
+        related_posts=related_posts,
+        comments=comments_data,
+        post_like_count=post_like_count,
+        user_liked_post=user_liked_post,
+        liked_comments=liked_comments,
+        is_bookmarked=is_bookmarked
+    )
 
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
@@ -986,7 +1014,7 @@ def manage_profile():
     )
 
 # --- ইন্টারঅ্যাকশন রাউটস (লাইক, কমেন্ট, বুকমার্ক) ---
-@app.route('/like_post/<int:post_id>')
+@app.route('/like_post/<int:post_id>', methods=['GET', 'POST'])
 @login_required
 def like_post(post_id):
     conn = get_db_connection()
@@ -994,21 +1022,50 @@ def like_post(post_id):
     if existing: conn.execute('DELETE FROM post_likes WHERE user_id = ? AND post_id = ?', (current_user.id, post_id))
     else: conn.execute('INSERT INTO post_likes (user_id, post_id) VALUES (?, ?)', (current_user.id, post_id))
     conn.commit()
+    count = conn.execute('SELECT COUNT(*) FROM post_likes WHERE post_id = ?', (post_id,)).fetchone()[0]
+    slug = get_post_slug(conn, post_id)
     conn.close()
-    return redirect(url_for('post_detail', post_id=post_id))
+    if is_json_request():
+        return jsonify({"liked": not existing, "count": count})
+    if not slug:
+        return redirect(url_for('index'))
+    return redirect(url_for('post_detail', post_id=post_id, slug=slug))
 
 @app.route('/add_comment/<int:post_id>', methods=['POST'])
 @login_required
 def add_comment(post_id):
-    content = request.form['content']
+    content = request.form.get('content') or (request.json or {}).get('content')
+    conn = get_db_connection()
+    slug = get_post_slug(conn, post_id)
     if content:
-        conn = get_db_connection()
-        conn.execute('INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)', (post_id, current_user.id, content))
+        cursor = conn.execute(
+            'INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)',
+            (post_id, current_user.id, content)
+        )
         conn.commit()
+        comment_id = cursor.lastrowid
+        comment = conn.execute(
+            'SELECT comments.id, comments.content, comments.created_at, users.username '
+            'FROM comments JOIN users ON comments.user_id = users.id WHERE comments.id = ?',
+            (comment_id,)
+        ).fetchone()
         conn.close()
-    return redirect(url_for('post_detail', post_id=post_id))
+        if is_json_request():
+            return jsonify({
+                "id": comment['id'],
+                "content": comment['content'],
+                "created_at": comment['created_at'],
+                "username": comment['username']
+            })
+    else:
+        conn.close()
+    if is_json_request():
+        return jsonify({"error": "Missing content"}), 400
+    if not slug:
+        return redirect(url_for('index'))
+    return redirect(url_for('post_detail', post_id=post_id, slug=slug))
 
-@app.route('/like_comment/<int:comment_id>/<int:post_id>')
+@app.route('/like_comment/<int:comment_id>/<int:post_id>', methods=['GET', 'POST'])
 @login_required
 def like_comment(comment_id, post_id):
     conn = get_db_connection()
@@ -1016,22 +1073,29 @@ def like_comment(comment_id, post_id):
     if existing: conn.execute('DELETE FROM comment_likes WHERE user_id = ? AND comment_id = ?', (current_user.id, comment_id))
     else: conn.execute('INSERT INTO comment_likes (user_id, comment_id) VALUES (?, ?)', (current_user.id, comment_id))
     conn.commit()
+    count = conn.execute('SELECT COUNT(*) FROM comment_likes WHERE comment_id = ?', (comment_id,)).fetchone()[0]
+    slug = get_post_slug(conn, post_id)
     conn.close()
-    return redirect(url_for('post_detail', post_id=post_id))
+    if is_json_request():
+        return jsonify({"liked": not existing, "count": count, "comment_id": comment_id})
+    if not slug:
+        return redirect(url_for('index'))
+    return redirect(url_for('post_detail', post_id=post_id, slug=slug))
 
-@app.route('/toggle_bookmark/<int:post_id>')
+@app.route('/toggle_bookmark/<int:post_id>', methods=['GET', 'POST'])
 @login_required
 def toggle_bookmark(post_id):
     conn = get_db_connection()
     existing = conn.execute('SELECT * FROM bookmarks WHERE user_id = ? AND post_id = ?', (current_user.id, post_id)).fetchone()
     if existing:
         conn.execute('DELETE FROM bookmarks WHERE user_id = ? AND post_id = ?', (current_user.id, post_id))
-        flash('বুকমার্ক রিমুভ করা হয়েছে।')
     else:
         conn.execute('INSERT INTO bookmarks (user_id, post_id) VALUES (?, ?)', (current_user.id, post_id))
-        flash('বুকমার্ক যুক্ত করা হয়েছে!')
     conn.commit()
     conn.close()
+    if is_json_request():
+        return jsonify({"bookmarked": not existing})
+    flash('বুকমার্ক রিমুভ করা হয়েছে।' if existing else 'বুকমার্ক যুক্ত করা হয়েছে!')
     return redirect(request.referrer or url_for('index'))
 
 if __name__ == '__main__':
