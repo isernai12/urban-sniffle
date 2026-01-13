@@ -63,12 +63,12 @@
       overscroll-behavior-y: none;
     }
 
-    /* ✅ BLUR OFF (fix) */
-    .pageBlur{transition:none !important; min-height:100vh; display:flex; flex-direction:column;}
+    /* ✅ blur off (fix your blur issue) */
+    .pageBlur{min-height:100vh;display:flex;flex-direction:column;}
     body.menuOpen .pageBlur{filter:none !important;}
 
     /* =========================
-       HEADER + TRACKER
+       HEADER
        ========================= */
     .writoHeaderStack{
       position:sticky;
@@ -90,8 +90,7 @@
     }
 
     .writoHeader{
-      position:absolute;
-      top:0; left:0; right:0;
+      position:relative;
       height:var(--mainH);
       display:flex;
       align-items:center;
@@ -118,10 +117,12 @@
     .writoHeaderRight{display:flex;align-items:center;gap:10px}
     svg.lucide{width:19px;height:19px;stroke-width:1.5}
 
+    /* =========================
+       TRACKER (DETAIL ONLY)
+       ========================= */
     .trackerBar{
       border-top:1px solid rgba(255,255,255,0.10);
-      padding:4px 0 6px;
-      padding-top: calc(var(--mainH) + 4px);
+      padding:6px 0 8px;
       transition: padding-top .18s ease;
       will-change: padding-top;
     }
@@ -132,8 +133,8 @@
       pointer-events:none;
     }
     body.compactHeader .trackerBar{
-      padding-top: 8px;
       border-top:none;
+      padding-top: 8px;
     }
 
     .trackerInner{
@@ -145,7 +146,6 @@
       padding:0 2px;
     }
 
-    /* Progress Ring */
     .progressWrap{
       width:var(--ringSize);
       height:var(--ringSize);
@@ -176,12 +176,7 @@
     }
     body:not([data-theme="dark"]) .ringFill{stroke:rgba(15,23,42,0.92)}
 
-    /* ✅ tracker title hidden globally */
-    .trkTitle{display:none;}
-
-    /* ✅ show tracker title only on detail page */
-    body.hasDetailTracker .trkTitle{
-      display:block;
+    .trkTitle{
       flex:1;
       min-width:0;
       font-size:12px;
@@ -191,15 +186,7 @@
       text-overflow:ellipsis;
       font-weight:300;
     }
-    body.hasDetailTracker .trkTitle span{color:var(--text);font-weight:300}
-
-    /* ✅ TOC button hide globally */
-    #tocBtn{display:none;}
-
-    /* ✅ show TOC button only on detail page */
-    body.hasDetailTracker #tocBtn{
-      display:grid;
-    }
+    .trkTitle span{color:var(--text);font-weight:300}
 
     .tocBtn{
       border:none;background:transparent;
@@ -425,7 +412,7 @@
 <body data-theme="dark" class="{% block body_class %}{% endblock %}">
   <div class="pageBlur">
 
-    <!-- Header + Tracker -->
+    <!-- Header -->
     <div class="writoHeaderStack" id="headerStack">
       <header class="writoHeader" id="mainHeader">
         <div class="writoHeaderLeft">
@@ -450,28 +437,29 @@
         </div>
       </header>
 
-      <div class="trackerBar" id="articleTracker">
-        <div class="trackerInner">
-          <div class="progressWrap" aria-label="Reading progress">
-            <svg class="progressSvg" viewBox="0 0 36 36" aria-hidden="true">
-              <path class="ringTrack" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
-              <path class="ringFill" id="ringFill" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
-            </svg>
-          </div>
+      <!-- ✅ TRACKER: ONLY DETAIL PAGE -->
+      {% if show_detail_tracker %}
+        <div class="trackerBar" id="articleTracker">
+          <div class="trackerInner">
+            <div class="progressWrap" aria-label="Reading progress">
+              <svg class="progressSvg" viewBox="0 0 36 36" aria-hidden="true">
+                <path class="ringTrack" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
+                <path class="ringFill" id="ringFill" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
+              </svg>
+            </div>
 
-          <!-- ✅ Empty by default. Detail page will fill and show. -->
-          <div class="trkTitle">
-            <span id="currentSection">{% block tracker_title %}{% endblock %}</span>
-          </div>
+            <div class="trkTitle">
+              <span id="currentSection">{% block tracker_title %}{% endblock %}</span>
+            </div>
 
-          <!-- ✅ visible only in detail page via CSS -->
-          <button class="tocBtn" id="tocBtn" type="button" aria-label="Table of contents">
-            <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-          </button>
+            <button class="tocBtn" id="tocBtn" type="button" aria-label="Table of contents">
+              <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
         </div>
-      </div>
+      {% endif %}
 
       {% block header_extension %}{% endblock %}
     </div>
@@ -572,21 +560,23 @@
       </div>
     </section>
 
-    <!-- ✅ TOC modal (detail.html এটা ব্যবহার করবে) -->
-    <section class="writoModal" id="writoModalToc" aria-hidden="true">
-      <div class="writoModalInner">
-        <div class="writoModalHead">
-          <div class="writoModalTitle"><span data-lucide="list"></span> সেকশনসমূহ</div>
-          <button class="writoModalClose" type="button" data-writo-close aria-label="Close">
-            <span data-lucide="x"></span>
-          </button>
-        </div>
+    <!-- ✅ TOC Modal: ONLY DETAIL PAGE -->
+    {% if show_detail_tracker %}
+      <section class="writoModal" id="writoModalToc" aria-hidden="true">
+        <div class="writoModalInner">
+          <div class="writoModalHead">
+            <div class="writoModalTitle"><span data-lucide="list"></span> সেকশনসমূহ</div>
+            <button class="writoModalClose" type="button" data-writo-close aria-label="Close">
+              <span data-lucide="x"></span>
+            </button>
+          </div>
 
-        {% block toc_modal_content %}
-          <div class="writoHint" style="margin:0">এই পেজে কোনো TOC নেই।</div>
-        {% endblock %}
-      </div>
-    </section>
+          {% block toc_modal_content %}
+            <div class="writoHint" style="margin:0">এই পোস্টে কোনো TOC নেই।</div>
+          {% endblock %}
+        </div>
+      </section>
+    {% endif %}
 
     <!-- Main content -->
     <main class="container">
@@ -653,11 +643,11 @@
 
       modalSearch: document.getElementById("writoModalSearch"),
       modalSaved: document.getElementById("writoModalSaved"),
-      modalToc: document.getElementById("writoModalToc"),
+      modalToc: document.getElementById("writoModalToc"), // may be null on non-detail pages
 
       btnSearch: document.getElementById("writoBtnSearch"),
       btnBookmark: document.getElementById("writoBtnBookmark"),
-      btnToc: document.getElementById("tocBtn"),
+      btnToc: document.getElementById("tocBtn"), // may be null on non-detail pages
 
       searchInput: document.querySelector("#writoModalSearch .writoSearchInput"),
 
@@ -665,23 +655,24 @@
       iconMoon: document.getElementById("writoIconMoon"),
       iconSun: document.getElementById("writoIconSun"),
 
-      ring: document.getElementById("ringFill"),
-      currentSection: document.getElementById("currentSection")
+      ring: document.getElementById("ringFill") // may be null on non-detail pages
     };
 
     function applyTheme(theme){
       W.body.setAttribute("data-theme", theme);
       const isDark = theme === "dark";
-      W.iconMoon.style.display = isDark ? "none" : "inline-block";
-      W.iconSun.style.display  = isDark ? "inline-block" : "none";
+      if (W.iconMoon) W.iconMoon.style.display = isDark ? "none" : "inline-block";
+      if (W.iconSun)  W.iconSun.style.display  = isDark ? "inline-block" : "none";
       localStorage.setItem("writoTheme", theme);
     }
     applyTheme(localStorage.getItem("writoTheme")==="light" ? "light" : "dark");
 
-    W.btnTheme.addEventListener("click", () => {
-      const next = W.body.getAttribute("data-theme")==="dark" ? "light" : "dark";
-      applyTheme(next);
-    });
+    if (W.btnTheme){
+      W.btnTheme.addEventListener("click", () => {
+        const next = W.body.getAttribute("data-theme")==="dark" ? "light" : "dark";
+        applyTheme(next);
+      });
+    }
 
     function anyOpen(){
       return W.body.classList.contains("menuOpen")
@@ -708,18 +699,22 @@
     }
 
     // Menu open/close
-    W.openMenu.addEventListener("click", () => {
-      W.modalSearch.classList.remove("open");
-      W.modalSaved.classList.remove("open");
-      if (W.modalToc) W.modalToc.classList.remove("open");
-      if (W.btnToc) W.btnToc.classList.remove("open");
-      W.body.classList.add("menuOpen");
-      syncOverlay();
-    });
-    W.closeMenu.addEventListener("click", () => {
-      W.body.classList.remove("menuOpen");
-      syncOverlay();
-    });
+    if (W.openMenu){
+      W.openMenu.addEventListener("click", () => {
+        W.modalSearch.classList.remove("open");
+        W.modalSaved.classList.remove("open");
+        if (W.modalToc) W.modalToc.classList.remove("open");
+        if (W.btnToc) W.btnToc.classList.remove("open");
+        W.body.classList.add("menuOpen");
+        syncOverlay();
+      });
+    }
+    if (W.closeMenu){
+      W.closeMenu.addEventListener("click", () => {
+        W.body.classList.remove("menuOpen");
+        syncOverlay();
+      });
+    }
 
     // Modals
     function openModal(modal){
@@ -741,10 +736,10 @@
       }
     }
 
-    W.btnSearch.addEventListener("click", () => openModal(W.modalSearch));
-    W.btnBookmark.addEventListener("click", () => openModal(W.modalSaved));
+    if (W.btnSearch)   W.btnSearch.addEventListener("click", () => openModal(W.modalSearch));
+    if (W.btnBookmark) W.btnBookmark.addEventListener("click", () => openModal(W.modalSaved));
 
-    // TOC button works only if there are toc items in modal
+    // TOC only if exists
     if (W.btnToc && W.modalToc){
       W.btnToc.addEventListener("click", () => {
         const hasItems = W.modalToc.querySelector("[data-toc-item]") !== null;
@@ -760,18 +755,20 @@
     }
 
     document.querySelectorAll("[data-writo-close]").forEach(btn => btn.addEventListener("click", closeAll));
-    W.overlay.addEventListener("click", closeAll);
+    if (W.overlay) W.overlay.addEventListener("click", closeAll);
     window.addEventListener("keydown", (e) => { if(e.key==="Escape") closeAll(); });
 
-    // Progress ring fill based on scroll
+    // Progress ring fill based on scroll (only if ring exists)
     let raf = 0;
     function updateProgress(){
+      if (!W.ring) return;
       const doc = document.documentElement;
       const total = (doc.scrollHeight - window.innerHeight);
       const p = total <= 0 ? 1 : Math.min(1, Math.max(0, window.scrollY / total));
-      if (W.ring) W.ring.style.strokeDashoffset = String(100 - (p * 100));
+      W.ring.style.strokeDashoffset = String(100 - (p * 100));
     }
     function onScroll(){
+      if (!W.ring) return;
       if (raf) return;
       raf = requestAnimationFrame(() => {
         updateProgress();
@@ -782,7 +779,7 @@
     addEventListener("scroll", onScroll, { passive:true });
     addEventListener("resize", updateProgress);
 
-    // Compact header behavior
+    // Compact header behavior (works on all pages, tracker may or may not exist)
     let lastY = Math.max(0, window.scrollY || 0);
     let ticking = false;
     let compact = false;
