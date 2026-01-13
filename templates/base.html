@@ -177,7 +177,7 @@
                   <ul class="bookmark-list">
                       {% for bm in my_bookmarks %}
                           <li class="bookmark-item">
-                              <a href="/post/{{ bm['id'] }}" class="bm-link">{{ bm['title'] }}</a>
+                              <a href="{{ url_for('post_detail', post_id=bm['id'], slug=bm['slug']) }}" class="bm-link">{{ bm['title'] }}</a>
                               <a href="/toggle_bookmark/{{ bm['id'] }}" class="bm-remove" title="Remove">&times;</a>
                           </li>
                       {% endfor %}

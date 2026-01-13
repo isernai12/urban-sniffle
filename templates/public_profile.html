@@ -55,7 +55,7 @@
                 <div class="author-meta">⏱️ {{ post['read_time'] }} পড়া</div>
             </div>
         </div>
-        <a href="{{ url_for('post_detail', post_id=post['id']) }}" class="sub-btn" style="display: inline-block; width: auto; padding: 8px 15px; text-decoration: none;">বিস্তারিত পড়ুন</a>
+        <a href="{{ url_for('post_detail', post_id=post['id'], slug=post['slug']) }}" class="sub-btn" style="display: inline-block; width: auto; padding: 8px 15px; text-decoration: none;">বিস্তারিত পড়ুন</a>
     </div>
 {% else %}
     <p style="text-align: center; color: #666;">এই রাইটারের কোনো পোস্ট নেই।</p>

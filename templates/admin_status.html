@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="post">
+    <h1>স্ট্যাটাস অফ ওয়েব</h1>
+    <div style="display: grid; gap: 12px; margin-top: 15px;">
+        <div><strong>মোট ভিউ:</strong> {{ total_views }}</div>
+        <div><strong>আজকের নতুন ইউজার:</strong> {{ new_users_today }}</div>
+        <div><strong>মোট ইউজার:</strong> {{ total_users }}</div>
+        <div><strong>আপটাইম:</strong> {{ uptime_hours }} ঘণ্টা {{ uptime_minutes }} মিনিট</div>
+        <div><strong>আজকের এরর:</strong> {{ errors_today }}</div>
+        <div><strong>আজকের নতুন পোস্ট:</strong> {{ new_posts_today }}</div>
+        <div><strong>মোট পোস্ট:</strong> {{ total_posts }}</div>
+        <div><strong>এভারেজ সাইটে থাকা সময়:</strong> প্রায় {{ avg_read_time_minutes }} মিনিট</div>
+    </div>
+</div>
+{% endblock %}

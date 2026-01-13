@@ -157,7 +157,7 @@
         </div>
         <div style="display: grid; gap: 15px;">
             {% for rel_post in related_posts %}
-                <div class="post" style="margin-bottom: 0; cursor: pointer;" onclick="window.location.href='{{ url_for('post_detail', post_id=rel_post['id']) }}'">
+                <div class="post" style="margin-bottom: 0; cursor: pointer;" onclick="window.location.href='{{ url_for('post_detail', post_id=rel_post['id'], slug=rel_post['slug']) }}'">
                     <h3 style="font-size: 1rem; margin: 0;">{{ rel_post['title'] }}</h3>
                     <div class="author-row" style="margin-top: 6px;">
                         <div class="author-avatar" style="width: 28px; height: 28px; font-size: 0.75rem;">

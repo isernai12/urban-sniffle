@@ -13,7 +13,7 @@
                 রিপোর্টার: {{ report['reporter_name'] }} | কারণ: {{ report['reason'] }}
             </td>
             <td>
-                <a href="/post/{{ report['post_id'] }}" target="_blank">দেখুন</a>
+                <a href="{{ url_for('post_detail', post_id=report['post_id'], slug=report['post_slug']) }}" target="_blank">দেখুন</a>
                 <a href="/admin_action_report/{{ report['id'] }}/delete_content" style="color: red;">🗑️ Delete Post</a>
                 <a href="/admin_action_report/{{ report['id'] }}/dismiss" style="color: gray;">Ignore</a>
             </td>

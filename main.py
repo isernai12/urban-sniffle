@@ -3,6 +3,7 @@ import re
 import json
 import math
 import sqlite3
+import time
 from flask import Flask, render_template, request, redirect, url_for, flash, abort
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -10,6 +11,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_change_this_in_production'
+APP_START_TIME = time.time()
 
 # কনফিগারেশন
 UPLOAD_FOLDER = 'static/uploads'
@@ -48,7 +50,8 @@ def init_db():
             hobby TEXT,
             categories TEXT,
             social_links TEXT,
-            profile_pic TEXT
+            profile_pic TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
 
@@ -66,6 +69,7 @@ def init_db():
             is_active INTEGER DEFAULT 1, -- ইউজার চাইলে তার approved পোস্ট লুকাতে পারে
             thumbnail TEXT,
             trending_thumbnail TEXT,
+            slug TEXT,
             toc_data TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(user_id) REFERENCES users(id)
@@ -90,8 +94,16 @@ def init_db():
     conn.execute('CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER, user_id INTEGER, content TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(user_id) REFERENCES users(id))')
     conn.execute('CREATE TABLE IF NOT EXISTS comment_likes (user_id INTEGER, comment_id INTEGER, PRIMARY KEY (user_id, comment_id))')
     conn.execute('CREATE TABLE IF NOT EXISTS bookmarks (user_id INTEGER, post_id INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (user_id, post_id))')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS error_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            message TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
 
     ensure_user_columns(conn)
+    ensure_post_columns(conn)
     conn.commit()
     conn.close()
 
@@ -106,11 +118,23 @@ def ensure_user_columns(conn):
         'hobby': 'TEXT',
         'categories': 'TEXT',
         'social_links': 'TEXT',
-        'profile_pic': 'TEXT'
+        'profile_pic': 'TEXT',
+        'created_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
     }
     for column, column_type in columns_to_add.items():
         if column not in existing_columns:
             conn.execute(f"ALTER TABLE users ADD COLUMN {column} {column_type}")
+
+def ensure_post_columns(conn):
+    existing_columns = {
+        row['name'] for row in conn.execute("PRAGMA table_info(posts)").fetchall()
+    }
+    columns_to_add = {
+        'slug': 'TEXT'
+    }
+    for column, column_type in columns_to_add.items():
+        if column not in existing_columns:
+            conn.execute(f"ALTER TABLE posts ADD COLUMN {column} {column_type}")
 
 # --- ইউজার মডেল ---
 class User(UserMixin):
@@ -139,11 +163,21 @@ def load_user(user_id):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def slugify_text(text):
+    cleaned = re.sub(r'[^\w\s-]', '', (text or '').strip().lower())
+    cleaned = re.sub(r'[\s_-]+', '-', cleaned)
+    return cleaned.strip('-') or 'post'
+
 def calculate_read_time(content):
     plain_text = re.sub(r'<[^>]+>', ' ', content or '')
     words = re.findall(r'\w+', plain_text)
     minutes = max(1, math.ceil(len(words) / 200))
     return f"{minutes} মিনিট"
+
+def calculate_read_time_minutes(content):
+    plain_text = re.sub(r'<[^>]+>', ' ', content or '')
+    words = re.findall(r'\w+', plain_text)
+    return max(1, math.ceil(len(words) / 200))
 
 def build_post_payload(rows):
     posts = []
@@ -153,6 +187,7 @@ def build_post_payload(rows):
         post['author_display_name'] = author_name
         post['author_profile_pic'] = row['author_profile_pic']
         post['read_time'] = calculate_read_time(post.get('content', ''))
+        post['slug'] = post.get('slug') or slugify_text(post.get('title'))
         posts.append(post)
     return posts
 
@@ -171,13 +206,16 @@ def inject_global_data():
     if current_user.is_authenticated:
         conn = get_db_connection()
         bookmarks = conn.execute('''
-            SELECT posts.id, posts.title, posts.thumbnail 
+            SELECT posts.id, posts.title, posts.thumbnail, posts.slug
             FROM bookmarks 
             JOIN posts ON bookmarks.post_id = posts.id 
             WHERE bookmarks.user_id = ? 
             ORDER BY bookmarks.created_at DESC
         ''', (current_user.id,)).fetchall()
         conn.close()
+        bookmarks = [
+            dict(row, slug=row['slug'] or slugify_text(row['title'])) for row in bookmarks
+        ]
     return dict(my_bookmarks=bookmarks)
 
 # --- অথেন্টিকেশন রাউটস ---
@@ -222,6 +260,22 @@ def login():
         else:
             flash('ভুল ইমেইল/ইউজারনেম বা পাসওয়ার্ড।')
     return render_template('login.html')
+
+@app.errorhandler(500)
+def handle_internal_error(error):
+    conn = get_db_connection()
+    conn.execute("INSERT INTO error_logs (message) VALUES (?)", (str(error),))
+    conn.commit()
+    conn.close()
+    return "Internal Server Error", 500
+
+@app.errorhandler(404)
+def handle_not_found(error):
+    conn = get_db_connection()
+    conn.execute("INSERT INTO error_logs (message) VALUES (?)", (str(error),))
+    conn.commit()
+    conn.close()
+    return "Not Found", 404
 
 @app.route('/logout')
 @login_required
@@ -446,12 +500,13 @@ def create():
                 return f'<span id="{unique_id}" class="toc-marker" data-title="{toc_title}"></span>'
             processed_content = re.sub(r'\[toc:(.*?)\]', replace_and_build_toc, raw_content)
             toc_json = json.dumps(toc_list)
+            slug = slugify_text(title)
 
             conn = get_db_connection()
             conn.execute('''
-                INSERT INTO posts (user_id, title, intro, content, category, status, thumbnail, trending_thumbnail, toc_data) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (current_user.id, title, intro, processed_content, category, status, filename, trending_filename, toc_json))
+                INSERT INTO posts (user_id, title, intro, content, category, status, thumbnail, trending_thumbnail, toc_data, slug) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (current_user.id, title, intro, processed_content, category, status, filename, trending_filename, toc_json, slug))
             conn.commit()
             conn.close()
 
@@ -487,10 +542,20 @@ def edit_post(post_id):
         if action == 'submit': status = 'pending'
         if action == 'draft': status = 'draft'
 
+        toc_list = []
+        def replace_and_build_toc(match):
+            toc_title = match.group(1)
+            unique_id = f"toc-{len(toc_list)}"
+            toc_list.append({'id': unique_id, 'title': toc_title})
+            return f'<span id="{unique_id}" class="toc-marker" data-title="{toc_title}"></span>'
+        processed_content = re.sub(r'\[toc:(.*?)\]', replace_and_build_toc, raw_content)
+        toc_json = json.dumps(toc_list)
+        slug = slugify_text(title)
+
         # ফাইল আপলোড লজিক (সংক্ষিপ্ত রাখার জন্য এখানে পুরোটা রিপিট করা হলো না, create এর মতোই হবে)
         # ডাটাবেস আপডেট:
-        conn.execute('UPDATE posts SET title=?, intro=?, content=?, category=?, status=? WHERE id=?', 
-                     (title, intro, raw_content, category, status, post_id))
+        conn.execute('UPDATE posts SET title=?, intro=?, content=?, category=?, status=?, toc_data=?, slug=? WHERE id=?', 
+                     (title, intro, processed_content, category, status, toc_json, slug, post_id))
         conn.commit()
         conn.close()
         flash('পোস্ট আপডেট করা হয়েছে!')
@@ -542,6 +607,46 @@ def admin_dashboard():
                            post_report_count=post_report_count,
                            comment_report_count=comment_report_count)
 
+@app.route('/admin/status')
+@login_required
+def admin_status():
+    if not current_user.is_admin:
+        return "Access Denied", 403
+    conn = get_db_connection()
+    total_views = conn.execute("SELECT COALESCE(SUM(views), 0) FROM posts").fetchone()[0]
+    total_users = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+    total_posts = conn.execute("SELECT COUNT(*) FROM posts").fetchone()[0]
+    new_users_today = conn.execute(
+        "SELECT COUNT(*) FROM users WHERE DATE(created_at) = DATE('now')"
+    ).fetchone()[0]
+    new_posts_today = conn.execute(
+        "SELECT COUNT(*) FROM posts WHERE DATE(created_at) = DATE('now')"
+    ).fetchone()[0]
+    errors_today = conn.execute(
+        "SELECT COUNT(*) FROM error_logs WHERE DATE(created_at) = DATE('now')"
+    ).fetchone()[0]
+    avg_read_time_minutes = conn.execute(
+        "SELECT AVG(LENGTH(content)) FROM posts WHERE status='approved' AND is_active=1"
+    ).fetchone()[0]
+    avg_read_time_minutes = 0 if avg_read_time_minutes is None else avg_read_time_minutes
+    avg_read_time_minutes = max(1, math.ceil((avg_read_time_minutes / 5) / 200))
+    uptime_seconds = int(time.time() - APP_START_TIME)
+    uptime_hours = uptime_seconds // 3600
+    uptime_minutes = (uptime_seconds % 3600) // 60
+    conn.close()
+    return render_template(
+        'admin_status.html',
+        total_views=total_views,
+        total_users=total_users,
+        total_posts=total_posts,
+        new_users_today=new_users_today,
+        new_posts_today=new_posts_today,
+        errors_today=errors_today,
+        uptime_hours=uptime_hours,
+        uptime_minutes=uptime_minutes,
+        avg_read_time_minutes=avg_read_time_minutes
+    )
+
 @app.route('/admin/pending')
 @login_required
 def admin_pending_posts():
@@ -566,13 +671,17 @@ def admin_reports():
         return "Access Denied", 403
     conn = get_db_connection()
     post_reports = conn.execute('''
-        SELECT reports.*, posts.title, users.username as reporter_name
+        SELECT reports.*, posts.title, posts.slug as post_slug, users.username as reporter_name
         FROM reports
         JOIN posts ON reports.post_id = posts.id
         JOIN users ON reports.reporter_id = users.id
         WHERE reports.post_id IS NOT NULL
         ORDER BY reports.created_at DESC
     ''').fetchall()
+    post_reports = [
+        dict(row, post_slug=row['post_slug'] or slugify_text(row['title']))
+        for row in post_reports
+    ]
 
     comment_reports = conn.execute('''
         SELECT reports.*, comments.content as comment_content, users.username as reporter_name
@@ -603,6 +712,7 @@ def admin_preview(post_id):
     post = dict(post)
     post['author_display_name'] = post['author_name'] or post['username']
     post['read_time'] = calculate_read_time(post.get('content', ''))
+    post['slug'] = post.get('slug') or slugify_text(post.get('title'))
     toc_items = json.loads(post['toc_data']) if post['toc_data'] else []
     return render_template('preview.html', post=post, content=post['content'], toc_items=toc_items)
 
@@ -670,7 +780,17 @@ def report_content():
 
 # --- ডিটেইলস পেজ ---
 @app.route('/post/<int:post_id>')
-def post_detail(post_id):
+def post_redirect(post_id):
+    conn = get_db_connection()
+    post = conn.execute('SELECT id, title, slug FROM posts WHERE id = ?', (post_id,)).fetchone()
+    conn.close()
+    if not post:
+        return "Not Found", 404
+    slug = post['slug'] or slugify_text(post['title'])
+    return redirect(url_for('post_detail', post_id=post_id, slug=slug))
+
+@app.route('/post/<int:post_id>/<slug>')
+def post_detail(post_id, slug):
     conn = get_db_connection()
     post = conn.execute('''
         SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
@@ -685,6 +805,7 @@ def post_detail(post_id):
     post = dict(post)
     post['author_display_name'] = post['author_name'] or post['username']
     post['read_time'] = calculate_read_time(post.get('content', ''))
+    post['slug'] = post.get('slug') or slugify_text(post.get('title'))
 
     # অ্যাক্সেস লজিক:
     is_author = current_user.is_authenticated and post['user_id'] == current_user.id

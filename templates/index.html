@@ -41,7 +41,7 @@
 
                         <h2 style="margin-top: 10px;">{{ post['title'] }}</h2>
                         <p style="color: #666;">{{ post['intro'] }}</p>
-                        <a href="{{ url_for('post_detail', post_id=post['id']) }}" class="view-all-btn">পড়ুন &rarr;</a>
+                        <a href="{{ url_for('post_detail', post_id=post['id'], slug=post['slug']) }}" class="view-all-btn">পড়ুন &rarr;</a>
                     </div>
                 </div>
             {% endfor %}
@@ -76,7 +76,7 @@
                         </div>
                         <a class="author-name" style="font-size: 0.85rem;" href="{{ url_for('public_profile', user_id=post['user_id']) }}">{{ post['author_display_name'] }}</a>
                     </div>
-                    <a href="{{ url_for('post_detail', post_id=post['id']) }}" style="font-size: 0.9em; color: #2563eb; text-decoration: none;">বিস্তারিত</a>
+                    <a href="{{ url_for('post_detail', post_id=post['id'], slug=post['slug']) }}" style="font-size: 0.9em; color: #2563eb; text-decoration: none;">বিস্তারিত</a>
                 </div>
             </div>
         {% endfor %}
@@ -106,7 +106,7 @@
                         </div>
                         <a class="author-name" style="font-size: 0.85rem;" href="{{ url_for('public_profile', user_id=post['user_id']) }}">{{ post['author_display_name'] }}</a>
                     </div>
-                    <a href="{{ url_for('post_detail', post_id=post['id']) }}" style="font-size: 0.85em; color: #2563eb; text-decoration: none;">পড়ুন &rarr;</a>
+                    <a href="{{ url_for('post_detail', post_id=post['id'], slug=post['slug']) }}" style="font-size: 0.85em; color: #2563eb; text-decoration: none;">পড়ুন &rarr;</a>
                 </div>
             {% endfor %}
         </div>

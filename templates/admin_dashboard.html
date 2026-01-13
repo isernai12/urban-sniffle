@@ -16,6 +16,12 @@
             <p style="color: #475569; margin: 6px 0;">পোস্ট রিপোর্ট: {{ post_report_count }} | কমেন্ট রিপোর্ট: {{ comment_report_count }}</p>
             <a href="{{ url_for('admin_reports') }}" class="sub-btn" style="display: inline-block; width: auto; padding: 8px 16px; text-decoration: none; background: #ef4444;">রিপোর্ট দেখুন</a>
         </div>
+
+        <div style="padding: 15px; border: 1px solid #dbeafe; border-radius: 12px; background: #eff6ff;">
+            <h3>📊 স্ট্যাটাস অফ ওয়েব</h3>
+            <p style="color: #475569; margin: 6px 0;">ভিউ, ইউজার, আপটাইম ও অন্যান্য তথ্য</p>
+            <a href="{{ url_for('admin_status') }}" class="sub-btn" style="display: inline-block; width: auto; padding: 8px 16px; text-decoration: none; background: #2563eb;">স্ট্যাটাস দেখুন</a>
+        </div>
     </div>
 </div>
 {% endblock %}
