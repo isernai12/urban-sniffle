@@ -156,6 +156,14 @@ def build_post_payload(rows):
         posts.append(post)
     return posts
 
+def build_writer_payload(rows):
+    writers = []
+    for row in rows:
+        writer = dict(row)
+        writer['display_name'] = row['name'] or row['username']
+        writers.append(writer)
+    return writers
+
 # গ্লোবাল ডাটা (বুকমার্ক) সব টেমপ্লেটে পাঠানোর জন্য
 @app.context_processor
 def inject_global_data():
@@ -268,13 +276,27 @@ def index():
             category_sections.append({'name': cat_name, 'posts': posts})
 
     all_categories = conn.execute("SELECT DISTINCT category FROM posts WHERE status='approved' AND is_active=1").fetchall()
+
+    top_writers = conn.execute("""
+        SELECT users.id, users.username, users.name, users.profile_pic,
+               COUNT(posts.id) as post_count,
+               COALESCE(SUM(posts.views), 0) as total_views
+        FROM users
+        JOIN posts ON posts.user_id = users.id
+        WHERE posts.status='approved' AND posts.is_active=1
+        GROUP BY users.id
+        ORDER BY total_views DESC
+        LIMIT 5
+    """).fetchall()
+    top_writers = build_writer_payload(top_writers)
     conn.close()
 
     return render_template('index.html', 
                            trending_posts=trending_posts, 
                            latest_posts=latest_posts, 
                            category_sections=category_sections, 
-                           all_categories=all_categories)
+                           all_categories=all_categories,
+                           top_writers=top_writers)
 
 @app.route('/list')
 def post_list():
@@ -331,6 +353,43 @@ def search():
     all_categories = conn.execute("SELECT DISTINCT category FROM posts WHERE status='approved' AND is_active=1").fetchall()
     conn.close()
     return render_template('list.html', posts=posts, title=title, all_categories=all_categories)
+
+@app.route('/writers')
+def writers_list():
+    conn = get_db_connection()
+    writers = conn.execute("""
+        SELECT users.id, users.username, users.name, users.profile_pic,
+               COUNT(posts.id) as post_count,
+               COALESCE(SUM(posts.views), 0) as total_views
+        FROM users
+        JOIN posts ON posts.user_id = users.id
+        WHERE posts.status='approved' AND posts.is_active=1
+        GROUP BY users.id
+        ORDER BY total_views DESC
+    """).fetchall()
+    writers = build_writer_payload(writers)
+    all_categories = conn.execute("SELECT DISTINCT category FROM posts WHERE status='approved' AND is_active=1").fetchall()
+    conn.close()
+    return render_template('writers.html', writers=writers, all_categories=all_categories)
+
+@app.route('/writer/<int:user_id>')
+def public_profile(user_id):
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    if not user:
+        conn.close()
+        return "Not Found", 404
+    posts = conn.execute("""
+        SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
+        FROM posts
+        JOIN users ON posts.user_id = users.id
+        WHERE posts.user_id = ? AND posts.status='approved' AND posts.is_active=1
+        ORDER BY posts.id DESC
+    """, (user_id,)).fetchall()
+    posts = build_post_payload(posts)
+    all_categories = conn.execute("SELECT DISTINCT category FROM posts WHERE status='approved' AND is_active=1").fetchall()
+    conn.close()
+    return render_template('public_profile.html', user=user, posts=posts, all_categories=all_categories)
 
 # --- ইউজার এরিয়া (পোস্ট তৈরি ও ম্যানেজ) ---
 

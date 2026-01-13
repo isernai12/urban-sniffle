@@ -58,7 +58,7 @@
                 {% endif %}
             </div>
             <div>
-                <div class="author-name">{{ post['author_display_name'] }}</div>
+                <a class="author-name" href="{{ url_for('public_profile', user_id=post['user_id']) }}">{{ post['author_display_name'] }}</a>
                 <div class="author-meta">⏱️ {{ post['read_time'] }} পড়া</div>
             </div>
         </div>
@@ -167,7 +167,7 @@
                                 {{ rel_post['author_display_name'][:1] }}
                             {% endif %}
                         </div>
-                        <div class="author-name" style="font-size: 0.85rem;">{{ rel_post['author_display_name'] }}</div>
+                        <a class="author-name" style="font-size: 0.85rem;" href="{{ url_for('public_profile', user_id=rel_post['user_id']) }}">{{ rel_post['author_display_name'] }}</a>
                     </div>
                 </div>
             {% endfor %}

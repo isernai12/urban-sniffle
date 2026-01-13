@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="section-header">
+    <span class="section-title">সব রাইটার</span>
+</div>
+
+<div style="display: grid; gap: 15px;">
+    {% for writer in writers %}
+        <div class="post" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <div class="author-row" style="margin-top: 0;">
+                <div class="author-avatar">
+                    {% if writer['profile_pic'] %}
+                        <img src="{{ url_for('static', filename='profile_uploads/' + writer['profile_pic']) }}" alt="profile">
+                    {% else %}
+                        {{ writer['display_name'][:1] }}
+                    {% endif %}
+                </div>
+                <div>
+                    <a class="author-name" href="{{ url_for('public_profile', user_id=writer['id']) }}">{{ writer['display_name'] }}</a>
+                    <div class="author-meta">পোস্ট: {{ writer['post_count'] }} • ভিউ: {{ writer['total_views'] }}</div>
+                </div>
+            </div>
+            <a href="{{ url_for('public_profile', user_id=writer['id']) }}" class="view-all-btn">প্রোফাইল দেখুন</a>
+        </div>
+    {% else %}
+        <p style="text-align: center; color: #666;">কোনো রাইটার পাওয়া যায়নি।</p>
+    {% endfor %}
+</div>
+{% endblock %}
