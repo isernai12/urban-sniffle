@@ -84,7 +84,7 @@
       overflow:hidden;
       transform: translateZ(0);
 
-      /* ✅ FIX: header-এর height ধরে রাখবে (কারণ header absolute) */
+      /* ✅ FIX: header absolute হওয়ায় জায়গা ধরে রাখবে */
       min-height: var(--mainH);
     }
     body[data-theme="dark"] .writoHeaderStack{
@@ -129,21 +129,11 @@
       will-change: padding-top;
     }
 
-    /* ✅ FIX: tracker সব পেইজে লুকানো থাকবে */
+    /* ✅ Tracker ডিফল্টভাবে সব পেইজে লুকানো */
     #articleTracker{display:none;}
 
-    /* ✅ FIX: শুধু detail page এ দেখাবে */
+    /* ✅ শুধু detail page এ tracker দেখাবে */
     body.hasDetailTracker #articleTracker{display:block;}
-
-    body.compactHeader .writoHeader{
-      transform: translateY(-100%);
-      opacity:0;
-      pointer-events:none;
-    }
-    body.compactHeader .trackerBar{
-      padding-top: 8px;
-      border-top:none;
-    }
 
     .trackerInner{
       width:min(var(--wrap), calc(100vw - 28px));
@@ -206,9 +196,7 @@
     #tocBtn{display:none;}
 
     /* ✅ show TOC button only on detail page */
-    body.hasDetailTracker #tocBtn{
-      display:grid;
-    }
+    body.hasDetailTracker #tocBtn{display:grid;}
 
     .tocBtn{
       border:none;background:transparent;
@@ -221,6 +209,20 @@
     .tocBtn:active{transform:scale(.98)}
     .chev{width:18px;height:18px;transition:transform .18s ease}
     .tocBtn.open .chev{transform:rotate(180deg)}
+
+    /* ✅ Compact header ONLY detail page */
+    body.hasDetailTracker.compactHeader .writoHeader{
+      transform: translateY(-100%);
+      opacity:0;
+      pointer-events:none;
+    }
+    body.hasDetailTracker.compactHeader .trackerBar{
+      padding-top: 8px;
+      border-top:none;
+    }
+    body.hasDetailTracker.compactHeader .writoModal{
+      top:54px;
+    }
 
     /* Overlay */
     .writoOverlay{
@@ -322,7 +324,6 @@
       overflow:auto;
       -webkit-overflow-scrolling: touch;
     }
-    body.compactHeader .writoModal{ top:54px; }
     body[data-theme="dark"] .writoModal{
       background: rgba(10,10,10,0.64);
       border:1px solid rgba(255,255,255,0.14);
@@ -468,12 +469,10 @@
             </svg>
           </div>
 
-          <!-- ✅ Empty by default. Detail page will fill and show. -->
           <div class="trkTitle">
             <span id="currentSection">{% block tracker_title %}{% endblock %}</span>
           </div>
 
-          <!-- ✅ visible only in detail page via CSS -->
           <button class="tocBtn" id="tocBtn" type="button" aria-label="Table of contents">
             <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -791,47 +790,51 @@
     addEventListener("scroll", onScroll, { passive:true });
     addEventListener("resize", updateProgress);
 
-    // Compact header behavior
-    let lastY = Math.max(0, window.scrollY || 0);
-    let ticking = false;
-    let compact = false;
-    let lastToggle = 0;
+    /* ✅ Compact header behavior ONLY detail page */
+    if (document.body.classList.contains("hasDetailTracker")) {
 
-    const COMPACT_ON = 90;
-    const EXPAND_AT  = 35;
-    const DELTA      = 2;
-    const COOLDOWN   = 180;
+      let lastY = Math.max(0, window.scrollY || 0);
+      let ticking = false;
+      let compact = false;
+      let lastToggle = 0;
 
-    function setCompact(next){
-      const now = performance.now();
-      if (next === compact) return;
-      if (now - lastToggle < COOLDOWN) return;
+      const COMPACT_ON = 90;
+      const EXPAND_AT  = 35;
+      const DELTA      = 2;
+      const COOLDOWN   = 180;
 
-      compact = next;
-      document.body.classList.toggle("compactHeader", compact);
-      lastToggle = now;
-    }
+      function setCompact(next){
+        const now = performance.now();
+        if (next === compact) return;
+        if (now - lastToggle < COOLDOWN) return;
 
-    function onScrollSmart(){
-      const y = Math.max(0, window.scrollY || 0);
-      const d = y - lastY;
-
-      if (y <= EXPAND_AT) setCompact(false);
-      else {
-        if (d > DELTA && y >= COMPACT_ON) setCompact(true);
-        if (d < -DELTA) setCompact(false);
+        compact = next;
+        document.body.classList.toggle("compactHeader", compact);
+        lastToggle = now;
       }
 
-      lastY = y;
-      ticking = false;
-    }
+      function onScrollSmart(){
+        const y = Math.max(0, window.scrollY || 0);
+        const d = y - lastY;
 
-    function tick(){
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(onScrollSmart);
+        if (y <= EXPAND_AT) setCompact(false);
+        else {
+          if (d > DELTA && y >= COMPACT_ON) setCompact(true);
+          if (d < -DELTA) setCompact(false);
+        }
+
+        lastY = y;
+        ticking = false;
+      }
+
+      function tick(){
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(onScrollSmart);
+      }
+
+      window.addEventListener("scroll", tick, { passive:true });
     }
-    window.addEventListener("scroll", tick, { passive:true });
   </script>
 
   {% block body_scripts %}{% endblock %}
