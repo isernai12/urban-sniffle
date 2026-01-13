@@ -63,8 +63,9 @@
       overscroll-behavior-y: none;
     }
 
-    .pageBlur{transition:filter .18s ease;will-change:filter; min-height:100vh; display:flex; flex-direction:column;}
-    body.menuOpen .pageBlur{filter:blur(6px)}
+    /* ✅ BLUR OFF (fix) */
+    .pageBlur{transition:none !important; min-height:100vh; display:flex; flex-direction:column;}
+    body.menuOpen .pageBlur{filter:none !important;}
 
     /* =========================
        HEADER + TRACKER
@@ -175,7 +176,12 @@
     }
     body:not([data-theme="dark"]) .ringFill{stroke:rgba(15,23,42,0.92)}
 
-    .trkTitle{
+    /* ✅ tracker title hidden globally */
+    .trkTitle{display:none;}
+
+    /* ✅ show tracker title only on detail page */
+    body.hasDetailTracker .trkTitle{
+      display:block;
       flex:1;
       min-width:0;
       font-size:12px;
@@ -185,7 +191,15 @@
       text-overflow:ellipsis;
       font-weight:300;
     }
-    .trkTitle span{color:var(--text);font-weight:300}
+    body.hasDetailTracker .trkTitle span{color:var(--text);font-weight:300}
+
+    /* ✅ TOC button hide globally */
+    #tocBtn{display:none;}
+
+    /* ✅ show TOC button only on detail page */
+    body.hasDetailTracker #tocBtn{
+      display:grid;
+    }
 
     .tocBtn{
       border:none;background:transparent;
@@ -352,25 +366,6 @@
 
     .writoHint{margin-top:10px;font-size:12px;font-weight:300;color:var(--muted);line-height:1.5}
 
-    @media (max-width: 600px){
-      .writoModal{
-        left: 50%;
-        top: auto;
-        bottom: 12px;
-        transform: translateX(-50%) translateY(10px);
-        width: calc(100vw - 24px);
-        max-height: calc(var(--vvh) - 24px);
-        border-radius:18px;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-      }
-      .writoModal.open{transform: translateX(-50%) translateY(0)}
-      body[data-theme="dark"] .writoModal{
-        background: rgba(10,10,10,0.92) !important;
-        box-shadow: 0 18px 55px rgba(0,0,0,0.60);
-      }
-    }
-
     /* Content Layout */
     .container{
       width:min(var(--wrap), calc(100vw - 28px));
@@ -427,7 +422,7 @@
   {% block head_extra %}{% endblock %}
 </head>
 
-<body data-theme="dark">
+<body data-theme="dark" class="{% block body_class %}{% endblock %}">
   <div class="pageBlur">
 
     <!-- Header + Tracker -->
@@ -464,11 +459,12 @@
             </svg>
           </div>
 
+          <!-- ✅ Empty by default. Detail page will fill and show. -->
           <div class="trkTitle">
-            <span id="currentSection">{% block tracker_title %}Writo{% endblock %}</span>
+            <span id="currentSection">{% block tracker_title %}{% endblock %}</span>
           </div>
 
-          <!-- ✅ detail.html এ TOC থাকলে এটাকে open করবে, না থাকলে disable -->
+          <!-- ✅ visible only in detail page via CSS -->
           <button class="tocBtn" id="tocBtn" type="button" aria-label="Table of contents">
             <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -480,10 +476,10 @@
       {% block header_extension %}{% endblock %}
     </div>
 
-    <!-- Side overlay -->
+    <!-- Overlay -->
     <div class="writoOverlay" id="writoOverlay"></div>
 
-    <!-- Side Menu (Jinja) -->
+    <!-- Side Menu -->
     <aside class="writoMenu" id="writoMenu">
       <div class="writoMenuHeader">
         <button class="writoIconBtn" id="writoCloseMenu" type="button" aria-label="Close menu">
@@ -497,13 +493,16 @@
             <span>স্বাগতম, <strong>{{ current_user.display_name }}</strong></span>
             {% if current_user.is_admin %}<span style="font-size:12px;opacity:.8">(Admin)</span>{% endif %}
           </div>
+
           <a class="writoPill" href="/profile"><span data-lucide="user"></span> প্রোফাইল</a>
+
           {% if current_user.is_admin %}
             <a class="writoPill" href="/admin/pending"><span data-lucide="shield"></span> পেন্ডিং রিভিউ</a>
             <a class="writoPill" href="/admin/reports"><span data-lucide="flag"></span> রিপোর্টস</a>
           {% else %}
             <a class="writoPill" href="/my_posts"><span data-lucide="file-text"></span> আমার পোস্ট</a>
           {% endif %}
+
           <a class="writoPill" href="/logout" style="border-color:rgba(239,68,68,.35)"><span data-lucide="log-out"></span> লগ আউট</a>
         </div>
       {% else %}
@@ -556,7 +555,8 @@
             <div style="display:grid; gap:10px;">
               {% for bm in my_bookmarks %}
                 <div class="post" style="margin:0; padding:12px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
-                  <a href="{{ url_for('post_detail', post_id=bm['id'], slug=bm['slug']) }}" style="text-decoration:none;color:var(--text);font-weight:700;font-size:13px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  <a href="{{ url_for('post_detail', post_id=bm['id'], slug=bm['slug']) }}"
+                     style="text-decoration:none;color:var(--text);font-weight:700;font-size:13px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                     {{ bm['title'] }}
                   </a>
                   <a href="/toggle_bookmark/{{ bm['id'] }}" title="Remove" style="text-decoration:none;font-size:18px;color:#ef4444;">&times;</a>
@@ -732,7 +732,6 @@
       modal.classList.add("open");
       syncOverlay();
 
-      // desktop: autofocus search
       const CAN_AUTOFOCUS = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
       if(modal === W.modalSearch && CAN_AUTOFOCUS && W.searchInput){
         modal.addEventListener("transitionend", () => {
@@ -745,13 +744,12 @@
     W.btnSearch.addEventListener("click", () => openModal(W.modalSearch));
     W.btnBookmark.addEventListener("click", () => openModal(W.modalSaved));
 
+    // TOC button works only if there are toc items in modal
     if (W.btnToc && W.modalToc){
       W.btnToc.addEventListener("click", () => {
         const hasItems = W.modalToc.querySelector("[data-toc-item]") !== null;
-        if (!hasItems){
-          // TOC নেই: কিছু করবে না (চাইলে Toast দিতে পারেন)
-          return;
-        }
+        if (!hasItems) return;
+
         const isOpen = W.modalToc.classList.contains("open");
         if (isOpen) closeAll();
         else {
