@@ -434,26 +434,7 @@
         </div>
       </header>
 
-      <div class="trackerBar" id="articleTracker">
-        <div class="trackerInner">
-          <div class="progressWrap" aria-label="Reading progress">
-            <svg class="progressSvg" viewBox="0 0 36 36" aria-hidden="true">
-              <path class="ringTrack" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
-              <path class="ringFill" id="ringFill" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
-            </svg>
-          </div>
-
-          <div class="trkTitle">
-            <span id="currentSection">{% block header_title %}Writo{% endblock %}</span>
-          </div>
-
-          <button class="tocBtn" id="tocBtn" type="button" aria-label="Demo button">
-            <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
+      {% block header_tracker %}{% endblock %}
       {% block header_extension %}{% endblock %}
     </div>
 

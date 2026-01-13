@@ -1,24 +1,44 @@
 {% extends 'base.html' %}
 
-{% block header_extension %}
-    <div class="subRow">
-        <div class="subTitle" id="currentTitle">পাইথন ব্লগ</div>
-        {% if toc_items %}
-            <button class="moreBtn" id="moreBtn" type="button">More</button>
-        {% else %}
-            <div style="width: 78px;"></div>
-        {% endif %}
-    </div>
+{% block header_title %}{{ post['title'] }}{% endblock %}
 
-    <div class="moreList" id="moreList">
-        {% for item in toc_items %}
-            <div class="moreItem" onclick="jumpToSection('{{ item.id }}', '{{ item.title }}')">
-                {{ item.title }}
+{% block header_tracker %}
+    <div class="trackerBar" id="articleTracker">
+        <div class="trackerInner">
+            <div class="progressWrap" aria-label="Reading progress">
+                <svg class="progressSvg" viewBox="0 0 36 36" aria-hidden="true">
+                    <path class="ringTrack" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
+                    <path class="ringFill" id="ringFill" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
+                </svg>
             </div>
-        {% endfor %}
-    </div>
 
-    <style> .spacer { height: 160px !important; } </style>
+            <div class="trkTitle">
+                <span id="currentSection">{{ post['title'] }}</span>
+            </div>
+
+            {% if toc_items %}
+                <button class="tocBtn" id="tocBtn" type="button" aria-label="Table of contents">
+                    <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </button>
+            {% else %}
+                <div style="width: 30px;"></div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block header_extension %}
+    {% if toc_items %}
+        <div class="moreList" id="moreList">
+            {% for item in toc_items %}
+                <div class="moreItem" onclick="jumpToSection('{{ item.id }}', '{{ item.title }}')">
+                    {{ item.title }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
 {% endblock %}
 
 {% block content %}
@@ -176,23 +196,25 @@
 
     <script>
         // TOC এবং স্ক্রল লজিক
-        const currentTitle = document.getElementById("currentTitle");
+        const currentSection = document.getElementById("currentSection");
         const moreListContainer = document.getElementById("moreList");
-        const moreBtnElement = document.getElementById("moreBtn");
+        const tocBtnElement = document.getElementById("tocBtn");
 
-        if(currentTitle) currentTitle.textContent = "{{ post['title'] }}";
+        if(currentSection) currentSection.textContent = "{{ post['title'] }}";
 
-        if (moreBtnElement && moreListContainer) {
-            moreBtnElement.addEventListener("click", () => {
+        if (tocBtnElement && moreListContainer) {
+            tocBtnElement.addEventListener("click", () => {
                 moreListContainer.classList.toggle("open");
-                moreBtnElement.textContent = moreListContainer.classList.contains("open") ? "Close" : "More";
+                tocBtnElement.querySelector('.chev').style.transform = moreListContainer.classList.contains("open") ? "rotate(180deg)" : "rotate(0deg)";
             });
         }
 
         function jumpToSection(id, title) {
             if(moreListContainer) moreListContainer.classList.remove("open");
-            if(moreBtnElement) moreBtnElement.textContent = "More";
-            currentTitle.textContent = title;
+            if (tocBtnElement && tocBtnElement.querySelector('.chev')) {
+                tocBtnElement.querySelector('.chev').style.transform = "rotate(0deg)";
+            }
+            if(currentSection) currentSection.textContent = title;
             const section = document.getElementById(id);
             if (section) {
                 const offset = 170; 
@@ -211,7 +233,7 @@
                     activeTitle = marker.getAttribute('data-title');
                 }
             });
-            if(currentTitle) currentTitle.textContent = activeTitle;
+            if(currentSection) currentSection.textContent = activeTitle;
         });
 
         // রিপোর্ট মডাল ওপেন করার লজিক
