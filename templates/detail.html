@@ -1,14 +1,12 @@
 {% extends 'base.html' %}
 
+{# ✅ Only detail page will show tracker + toc #}
+{% set show_detail_tracker = true %}
+
 {% block title %}{{ post['title'] }} • Writo{% endblock %}
-
-<!-- ✅ detail page marker -->
-{% block body_class %}hasDetailTracker{% endblock %}
-
-<!-- ✅ tracker title (only detail will show it) -->
 {% block tracker_title %}{{ post['title'] }}{% endblock %}
 
-<!-- ✅ TOC modal content -->
+{# ✅ TOC modal content goes here (base.html renders modal only if show_detail_tracker=true) #}
 {% block toc_modal_content %}
   {% if toc_items %}
     <div style="display:grid; gap:10px;">
@@ -41,11 +39,11 @@
 
 {% block content %}
 
-  <!-- ✅ Report modal -->
-  <section class="writoModal" id="reportModal" aria-hidden="true" style="top:72px;">
+  {# ✅ Report modal (post/comment) #}
+  <div id="reportModal" class="writoModal" aria-hidden="true">
     <div class="writoModalInner">
       <div class="writoModalHead">
-        <div class="writoModalTitle"><span data-lucide="flag"></span> রিপোর্ট করুন</div>
+        <div class="writoModalTitle"><span data-lucide="flag"></span> ⚠️ রিপোর্ট করুন</div>
         <button class="writoModalClose" type="button" onclick="closeReportModal()" aria-label="Close">
           <span data-lucide="x"></span>
         </button>
@@ -55,11 +53,10 @@
         <input type="hidden" name="post_id" id="report_post_id">
         <input type="hidden" name="comment_id" id="report_comment_id">
 
-        <label style="display:block;margin-bottom:6px;font-weight:700;font-size:13px;color:var(--muted);">
-          কারণ নির্বাচন করুন
-        </label>
+        <label style="display:block;margin-bottom:6px;font-weight:700;color:var(--text);">কারণ নির্বাচন করুন:</label>
         <select name="reason"
-                style="width:100%;height:42px;border-radius:14px;border:1px solid rgba(0,0,0,0.10);background:rgba(255,255,255,0.55);padding:0 12px;color:var(--text);">
+                style="width:100%;padding:12px;border-radius:14px;border:1px solid rgba(0,0,0,0.10);
+                       background: rgba(255,255,255,0.55); color:var(--text); font-family:inherit;">
           <option value="Spam">স্প্যাম / অপ্রয়োজনীয়</option>
           <option value="Abusive">খারাপ ভাষা / গালিগালাজ</option>
           <option value="Misleading">ভুল তথ্য</option>
@@ -67,20 +64,23 @@
         </select>
 
         <button type="submit"
-                style="margin-top:12px;width:100%;height:42px;border:none;border-radius:14px;background:#ef4444;color:#fff;font-weight:800;cursor:pointer;">
+                style="width:100%;margin-top:12px;padding:12px;border-radius:14px;border:none;
+                       background:#ef4444;color:#fff;font-weight:800;cursor:pointer;">
           জমা দিন
         </button>
       </form>
     </div>
-  </section>
+  </div>
 
+  {# ✅ Post card #}
   <div class="post">
-    <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px;">
+    <div style="font-size:12px;color:var(--muted);font-weight:800;margin-bottom:8px;">
       {{ post['category'] }}
     </div>
 
-    <!-- ✅ first marker -->
-    <h1 id="postTop" class="toc-marker" data-title="{{ post['title'] }}" style="font-size:20px;line-height:1.25;">
+    {# ✅ first marker: post title #}
+    <h1 id="postTop" class="toc-marker" data-title="{{ post['title'] }}"
+        style="font-size:20px;line-height:1.25;">
       {{ post['title'] }}
     </h1>
 
@@ -89,7 +89,10 @@
     </p>
 
     <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
-      <div style="width:34px;height:34px;border-radius:50%;background:rgba(148,163,184,.25);overflow:hidden;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--text);">
+      <div style="width:34px;height:34px;border-radius:50%;
+                  background:rgba(148,163,184,.25);
+                  overflow:hidden;display:flex;align-items:center;justify-content:center;
+                  font-weight:800;color:var(--text);">
         {% if post['author_profile_pic'] %}
           <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}"
                alt="profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
@@ -100,40 +103,56 @@
 
       <div style="min-width:0;">
         <a href="{{ url_for('public_profile', user_id=post['user_id']) }}"
-           style="text-decoration:none;color:var(--text);font-weight:800;font-size:13px;display:inline-block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+           style="text-decoration:none;color:var(--text);
+                  font-weight:900;font-size:13px;display:inline-block;max-width:100%;
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
           {{ post['author_display_name'] }}
         </a>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px;">⏱️ {{ post['read_time'] }} পড়া</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+          ⏱️ {{ post['read_time'] }} পড়া
+        </div>
       </div>
     </div>
 
+    <hr style="border:0;border-top:1px solid rgba(0,0,0,0.10);margin:14px 0;">
+
     {% if post['thumbnail'] %}
       <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}"
-           style="margin-top:14px;border-radius:16px;width:100%;height:auto;">
+           style="margin-top:2px;border-radius:16px;width:100%;height:auto;">
+      <hr style="border:0;border-top:1px solid rgba(0,0,0,0.10);margin:14px 0;">
     {% endif %}
 
-    <div class="post-content" style="margin-top:14px; line-height:1.85; font-size:15px;">
+    <div class="post-content" style="line-height:1.85; font-size:15px;">
       {% autoescape false %}
         {{ content | replace('\n', '<br>') }}
       {% endautoescape %}
     </div>
 
-    <hr style="margin-top:18px;border:none;border-top:1px solid rgba(148,163,184,.25);">
+    <hr style="border:0;border-top:1px solid rgba(0,0,0,0.10);margin:16px 0;">
 
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;">
+    {# Like + Report + Bookmark row #}
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
       <div style="display:flex;align-items:center;gap:14px;">
         {% if current_user.is_authenticated %}
           <a href="{{ url_for('like_post', post_id=post['id']) }}" style="text-decoration:none;">
-            {% if user_liked_post %}<span style="font-size:22px;">❤️</span>{% else %}<span style="font-size:22px;">🤍</span>{% endif %}
+            {% if user_liked_post %}
+              <span style="font-size:22px;">❤️</span>
+            {% else %}
+              <span style="font-size:22px;">🤍</span>
+            {% endif %}
           </a>
         {% else %}
           <a href="/login" style="text-decoration:none;"><span style="font-size:22px;">🤍</span></a>
         {% endif %}
-        <span style="font-weight:800;color:var(--muted);font-size:13px;">{{ post_like_count }} Likes</span>
+
+        <span style="font-weight:800;color:var(--muted);font-size:13px;">
+          {{ post_like_count }} Likes
+        </span>
 
         {% if current_user.is_authenticated %}
-          <button onclick="openReportModal('post','{{ post.id }}')"
-                  style="background:none;border:none;font-size:12px;color:#ef4444;cursor:pointer;text-decoration:underline;font-weight:800;">
+          <button onclick="openReportModal('post', '{{ post.id }}')"
+                  style="background:none;border:none;font-size:12px;color:#ef4444;
+                         cursor:pointer;text-decoration:underline;font-weight:800;">
             ⚠️ Report
           </button>
         {% endif %}
@@ -141,7 +160,8 @@
 
       <div>
         {% if current_user.is_authenticated %}
-          <a href="{{ url_for('toggle_bookmark', post_id=post['id']) }}" style="text-decoration:none;font-size:22px;" title="Bookmark">
+          <a href="{{ url_for('toggle_bookmark', post_id=post['id']) }}"
+             style="text-decoration:none;font-size:22px;" title="Bookmark">
             {% if is_bookmarked %} 🔖 {% else %} 🏷️ {% endif %}
           </a>
         {% else %}
@@ -151,37 +171,47 @@
     </div>
   </div>
 
+  {# ✅ Comments card #}
   <div class="post">
-    <h3 style="margin-bottom:12px;">মন্তব্য সমূহ</h3>
+    <h3 style="margin-bottom:12px;font-size:16px;">মন্তব্য সমূহ</h3>
 
     {% if current_user.is_authenticated %}
-      <form action="{{ url_for('add_comment', post_id=post['id']) }}" method="post" style="margin-bottom:18px;">
+      <form action="{{ url_for('add_comment', post_id=post['id']) }}" method="post" style="margin-bottom:16px;">
         <textarea name="content" rows="3" placeholder="সুন্দর একটি মন্তব্য করুন..." required
-                  style="width:100%;padding:12px;border-radius:14px;border:1px solid rgba(0,0,0,0.10);background:rgba(255,255,255,0.55);color:var(--text);"></textarea>
+                  style="width:100%;padding:12px;border-radius:14px;border:1px solid rgba(0,0,0,0.10);
+                         background: rgba(255,255,255,0.55); color:var(--text);"></textarea>
         <button type="submit"
-                style="margin-top:10px;height:40px;padding:0 14px;border:none;border-radius:14px;background:var(--text);color:var(--bg);font-weight:800;cursor:pointer;">
+                style="margin-top:10px;padding:10px 14px;border-radius:14px;border:none;
+                       background:rgba(37,99,235,0.95);color:#fff;font-weight:900;cursor:pointer;">
           মন্তব্য করুন
         </button>
       </form>
     {% else %}
-      <div class="writoHint" style="margin:0;background:rgba(59,130,246,.10);border:1px solid rgba(59,130,246,.18);border-radius:16px;padding:12px;">
-        মন্তব্য করতে <a href="/login" style="color:var(--text);font-weight:800;">লগ ইন</a> করুন।
+      <div style="background: rgba(56,189,248,.12); border:1px solid rgba(56,189,248,.20);
+                  padding:12px;border-radius:16px;margin-bottom:14px;font-size:13px;">
+        মন্তব্য করতে <a href="/login" style="font-weight:900;color:var(--text);">লগ ইন</a> করুন।
       </div>
     {% endif %}
 
     {% for comment in comments %}
-      <div style="border-bottom:1px solid rgba(148,163,184,.20); padding-bottom:12px; margin-bottom:12px;">
+      <div style="border-bottom:1px solid rgba(0,0,0,0.10);padding-bottom:12px;margin-bottom:12px;">
         <div style="display:flex;justify-content:space-between;gap:10px;">
           <strong style="color:var(--text);font-size:13px;">{{ comment['username'] }}</strong>
           <small style="color:var(--muted);font-size:12px;">{{ comment['created_at'] }}</small>
         </div>
-        <p style="margin:6px 0;color:var(--text);font-size:13px;line-height:1.6;">{{ comment['content'] }}</p>
+
+        <p style="margin:8px 0 10px; font-size:13px; line-height:1.7;">{{ comment['content'] }}</p>
 
         <div style="display:flex;align-items:center;gap:14px;">
           <div style="display:flex;align-items:center;gap:6px;">
             {% if current_user.is_authenticated %}
-              <a href="{{ url_for('like_comment', comment_id=comment['id'], post_id=post['id']) }}" style="text-decoration:none;">
-                {% if comment['id'] in liked_comments %}<span style="font-size:16px;">❤️</span>{% else %}<span style="font-size:16px;">🤍</span>{% endif %}
+              <a href="{{ url_for('like_comment', comment_id=comment['id'], post_id=post['id']) }}"
+                 style="text-decoration:none;">
+                {% if comment['id'] in liked_comments %}
+                  <span style="font-size:16px;">❤️</span>
+                {% else %}
+                  <span style="font-size:16px;">🤍</span>
+                {% endif %}
               </a>
             {% else %}
               <span style="font-size:16px;">🤍</span>
@@ -190,7 +220,7 @@
           </div>
 
           {% if current_user.is_authenticated %}
-            <button onclick="openReportModal('comment','{{ comment.id }}','{{ post.id }}')"
+            <button onclick="openReportModal('comment', '{{ comment.id }}', '{{ post.id }}')"
                     style="background:none;border:none;font-size:12px;color:#ef4444;cursor:pointer;font-weight:800;">
               ⚠️ Report
             </button>
@@ -198,60 +228,121 @@
         </div>
       </div>
     {% else %}
-      <p style="color:var(--muted);text-align:center;">কোনো মন্তব্য নেই। আপনিই প্রথম মন্তব্য করুন!</p>
+      <p style="color:var(--muted); text-align:center; font-size:13px; padding:8px 0;">
+        কোনো মন্তব্য নেই। আপনিই প্রথম মন্তব্য করুন!
+      </p>
     {% endfor %}
   </div>
+
+  {# ✅ Related posts #}
+  {% if related_posts %}
+    <div class="post">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <strong style="font-size:14px;">🔗 সম্পর্কিত পোস্ট</strong>
+      </div>
+
+      <div style="display:grid; gap:12px;">
+        {% for rel_post in related_posts %}
+          <div class="post" style="margin:0; cursor:pointer;"
+               onclick="window.location.href='{{ url_for('post_detail', post_id=rel_post['id'], slug=rel_post['slug']) }}'">
+            <div style="font-size:14px;font-weight:900;margin-bottom:6px;">
+              {{ rel_post['title'] }}
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:28px;height:28px;border-radius:50%;
+                          background:rgba(148,163,184,.25);
+                          overflow:hidden;display:flex;align-items:center;justify-content:center;
+                          font-weight:900;color:var(--text);font-size:12px;">
+                {% if rel_post['author_profile_pic'] %}
+                  <img src="{{ url_for('static', filename='profile_uploads/' + rel_post['author_profile_pic']) }}"
+                       alt="profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                {% else %}
+                  {{ rel_post['author_display_name'][:1] }}
+                {% endif %}
+              </div>
+
+              <a href="{{ url_for('public_profile', user_id=rel_post['user_id']) }}"
+                 style="text-decoration:none;color:var(--muted);font-weight:900;font-size:12px;">
+                {{ rel_post['author_display_name'] }}
+              </a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
 
 {% endblock %}
 
 {% block body_scripts %}
 <script>
+  // ✅ For tracker title (base.html uses id="currentSection")
   const currentTitleEl = document.getElementById("currentSection");
-  const tocModal = document.getElementById("writoModalToc");
 
+  // ✅ Close report modal (custom modal)
+  function closeReportModal(){
+    const rm = document.getElementById("reportModal");
+    if (rm) rm.classList.remove("open");
+    document.body.classList.remove("hasOverlay");
+  }
+
+  // ✅ Open report modal
+  function openReportModal(type, id, postId=null) {
+    const rm = document.getElementById("reportModal");
+    if (!rm) return;
+
+    rm.classList.add("open");
+    document.body.classList.add("hasOverlay");
+
+    const postInput = document.getElementById("report_post_id");
+    const comInput  = document.getElementById("report_comment_id");
+
+    if (type === "post") {
+      if (postInput) postInput.value = id;
+      if (comInput)  comInput.value  = "";
+    } else {
+      if (comInput)  comInput.value  = id;
+      if (postInput) postInput.value = postId || "";
+    }
+  }
+
+  // ✅ Jump to section by id (TOC item click)
   function jumpToSection(id, title){
-    // close any open modal
-    document.querySelectorAll("[data-writo-close]").forEach(btn => btn.click());
+    // close TOC modal if open
+    const tocModal = document.getElementById("writoModalToc");
+    const tocBtn   = document.getElementById("tocBtn");
+    if (tocModal) tocModal.classList.remove("open");
+    if (tocBtn) tocBtn.classList.remove("open");
+    document.body.classList.remove("hasOverlay");
 
     if (currentTitleEl) currentTitleEl.textContent = title;
 
     const section = document.getElementById(id);
     if (section){
-      const offset = document.body.classList.contains("compactHeader") ? 80 : 110;
+      const offset = document.body.classList.contains("compactHeader") ? 80 : 120;
       const top = section.getBoundingClientRect().top + window.pageYOffset - offset;
       window.scrollTo({ top, behavior:"smooth" });
     }
   }
 
-  // scroll-based section title update
+  // ✅ Scroll-based tracker title update (.toc-marker)
   function updateActiveTitle(){
     const markers = document.querySelectorAll(".toc-marker");
     if (!markers.length) return;
 
-    let active = markers[0].getAttribute("data-title") || "";
+    let active = markers[0].getAttribute("data-title") || "{{ post['title'] }}";
     markers.forEach(m => {
       const r = m.getBoundingClientRect();
       if (r.top < 160) active = m.getAttribute("data-title") || active;
     });
     if (currentTitleEl && active) currentTitleEl.textContent = active;
   }
+
   updateActiveTitle();
   window.addEventListener("scroll", () => requestAnimationFrame(updateActiveTitle), { passive:true });
 
-  // Report modal open/close
-  const reportModal = document.getElementById("reportModal");
-  function openReportModal(type, id, postId=null){
-    reportModal.classList.add("open");
-    document.body.classList.add("hasOverlay");
-
-    document.getElementById("report_post_id").value = (type === "post") ? id : (postId || "");
-    document.getElementById("report_comment_id").value = (type === "comment") ? id : "";
-  }
-  function closeReportModal(){
-    reportModal.classList.remove("open");
-    document.body.classList.remove("hasOverlay");
-  }
-
+  // ✅ Expose functions to inline onclick
   window.jumpToSection = jumpToSection;
   window.openReportModal = openReportModal;
   window.closeReportModal = closeReportModal;
