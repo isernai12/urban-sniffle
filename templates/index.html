@@ -12,7 +12,7 @@
       --thumb: #9ca3af;
       max-width: 520px;
       margin: 0 auto;
-      padding: 14px;
+      padding: 12px;
     }
 
     body[data-theme="dark"] .homeContent {
@@ -45,7 +45,7 @@
     .trendWrap {
       max-width: 520px;
       margin: 12px auto 0;
-      padding: 0 14px;
+      padding: 0 12px;
       position: relative;
       z-index: 1;
     }
@@ -229,7 +229,7 @@
     .latestList {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       padding-bottom: 14px;
     }
 
@@ -662,6 +662,14 @@
     }
 
     @media (max-width: 520px) {
+      .homeContent {
+        padding: 10px;
+      }
+
+      .trendWrap {
+        padding: 0 10px;
+      }
+
       .postMini {
         flex-basis: 220px;
       }
@@ -711,11 +719,11 @@
     <div class="sectionHead">
       <h2 class="sectionTitleHead">
         <i class="fa-regular fa-clock"></i>
-        লেটেস্ট
+        Latest
       </h2>
 
       <a class="viewAllLink" href="/list?type=latest">
-        সব দেখুন
+        View all
         <i class="fa-solid fa-arrow-right"></i>
       </a>
     </div>
@@ -750,7 +758,7 @@
                 </div>
                 <div>
                   <div class="author">{{ post['author_display_name'] }}</div>
-                  <div class="subMeta"><span>{{ post['created_at'] }}</span><span class="dotMini"></span><span>{{ post['read_time'] }}</span></div>
+                  <div class="subMeta"><span>{{ post['short_date'] }}</span><span class="dotMini"></span><span>{{ post['read_time_en'] }}</span></div>
                 </div>
               </div>
               <div class="metaRight">
@@ -800,7 +808,7 @@
                       </div>
                       <div>
                         <div class="miniAuthor">{{ post['author_display_name'] }}</div>
-                        <div class="sub"><span>{{ post['read_time'] }}</span><span class="miniDot"></span><span>{{ post['views'] }} views</span></div>
+                        <div class="sub"><span>{{ post['read_time_en'] }}</span><span class="miniDot"></span><span>{{ post['views'] }} views</span></div>
                       </div>
                     </div>
                     <div class="miniRight"><i class="fa-regular fa-eye"></i><span>{{ post['views'] }}</span></div>
@@ -816,7 +824,7 @@
     <section class="topWriters">
       <div class="writersHeader">
         <div class="writersTitle">Top Writers</div>
-        <a class="writersViewAll" href="{{ url_for('writers_list') }}">সব দেখুন</a>
+        <a class="writersViewAll" href="{{ url_for('writers_list') }}">View all</a>
       </div>
 
       <div class="writerRow" id="writerRow">
@@ -829,7 +837,7 @@
             {% endif %}
           </a>
         {% else %}
-          <p style="text-align: center; color: var(--muted);">কোনো রাইটার পাওয়া যায়নি।</p>
+          <p style="text-align: center; color: var(--muted);">No writers found.</p>
         {% endfor %}
       </div>
 

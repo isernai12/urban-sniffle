@@ -4,6 +4,7 @@ import json
 import math
 import sqlite3
 import time
+from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, abort
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -216,6 +217,21 @@ def build_post_payload(rows):
         post['author_display_name'] = author_name
         post['author_profile_pic'] = row['author_profile_pic']
         post['read_time'] = calculate_read_time(post.get('content', ''))
+        minutes = calculate_read_time_minutes(post.get('content', ''))
+        post['read_time_en'] = f"{minutes} min"
+        created_at = post.get('created_at')
+        short_date = created_at
+        if created_at:
+            try:
+                parsed = datetime.fromisoformat(created_at)
+            except ValueError:
+                try:
+                    parsed = datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    parsed = None
+            if parsed:
+                short_date = f"{parsed.strftime('%b')} {parsed.day}"
+        post['short_date'] = short_date
         post['slug'] = post.get('slug') or slugify_text(post.get('title'))
         posts.append(post)
     return posts
@@ -386,11 +402,11 @@ def post_list():
     filter_type = request.args.get('type')
     cat_name = request.args.get('category')
     conn = get_db_connection()
-    page_title = "সকল পোস্ট"
+    page_title = "All Posts"
     posts = []
 
     if filter_type == 'latest':
-        page_title = "সর্বশেষ সকল পোস্ট"
+        page_title = "Latest Posts"
         posts = conn.execute("""
             SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
             FROM posts
@@ -399,7 +415,7 @@ def post_list():
             ORDER BY posts.id DESC
         """).fetchall()
     elif filter_type == 'category' and cat_name:
-        page_title = f"ক্যাটাগরি: {cat_name}"
+        page_title = f"Category: {cat_name}"
         posts = conn.execute("""
             SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
             FROM posts
