@@ -2,10 +2,13 @@
 
 {% block title %}{{ post['title'] }} • Writo{% endblock %}
 
-{% block tracker_title %}
-  {{ post['title'] }}
-{% endblock %}
+<!-- ✅ detail page marker -->
+{% block body_class %}hasDetailTracker{% endblock %}
 
+<!-- ✅ tracker title (only detail will show it) -->
+{% block tracker_title %}{{ post['title'] }}{% endblock %}
+
+<!-- ✅ TOC modal content -->
 {% block toc_modal_content %}
   {% if toc_items %}
     <div style="display:grid; gap:10px;">
@@ -38,7 +41,7 @@
 
 {% block content %}
 
-  <!-- ✅ Report modal (আপনার পুরোনোটা একই) -->
+  <!-- ✅ Report modal -->
   <section class="writoModal" id="reportModal" aria-hidden="true" style="top:72px;">
     <div class="writoModalInner">
       <div class="writoModalHead">
@@ -52,15 +55,19 @@
         <input type="hidden" name="post_id" id="report_post_id">
         <input type="hidden" name="comment_id" id="report_comment_id">
 
-        <label style="display:block;margin-bottom:6px;font-weight:700;font-size:13px;color:var(--muted);">কারণ নির্বাচন করুন</label>
-        <select name="reason" style="width:100%;height:42px;border-radius:14px;border:1px solid rgba(0,0,0,0.10);background:rgba(255,255,255,0.55);padding:0 12px;color:var(--text);">
+        <label style="display:block;margin-bottom:6px;font-weight:700;font-size:13px;color:var(--muted);">
+          কারণ নির্বাচন করুন
+        </label>
+        <select name="reason"
+                style="width:100%;height:42px;border-radius:14px;border:1px solid rgba(0,0,0,0.10);background:rgba(255,255,255,0.55);padding:0 12px;color:var(--text);">
           <option value="Spam">স্প্যাম / অপ্রয়োজনীয়</option>
           <option value="Abusive">খারাপ ভাষা / গালিগালাজ</option>
           <option value="Misleading">ভুল তথ্য</option>
           <option value="Harassment">হয়রানি</option>
         </select>
 
-        <button type="submit" style="margin-top:12px;width:100%;height:42px;border:none;border-radius:14px;background:#ef4444;color:#fff;font-weight:800;cursor:pointer;">
+        <button type="submit"
+                style="margin-top:12px;width:100%;height:42px;border:none;border-radius:14px;background:#ef4444;color:#fff;font-weight:800;cursor:pointer;">
           জমা দিন
         </button>
       </form>
@@ -68,9 +75,11 @@
   </section>
 
   <div class="post">
-    <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px;">{{ post['category'] }}</div>
+    <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px;">
+      {{ post['category'] }}
+    </div>
 
-    <!-- ✅ এই H1 টাকে toc-marker বানালে স্ক্রল ট্র্যাকিং খুব সুন্দর কাজ করে -->
+    <!-- ✅ first marker -->
     <h1 id="postTop" class="toc-marker" data-title="{{ post['title'] }}" style="font-size:20px;line-height:1.25;">
       {{ post['title'] }}
     </h1>
@@ -82,8 +91,8 @@
     <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
       <div style="width:34px;height:34px;border-radius:50%;background:rgba(148,163,184,.25);overflow:hidden;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--text);">
         {% if post['author_profile_pic'] %}
-          <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="profile"
-               style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+          <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}"
+               alt="profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
         {% else %}
           {{ post['author_display_name'][:1] }}
         {% endif %}
@@ -193,31 +202,15 @@
     {% endfor %}
   </div>
 
-  {% if related_posts %}
-    <div class="post">
-      <h3 style="margin-bottom:10px;">🔗 সম্পর্কিত পোস্ট</h3>
-      <div style="display:grid;gap:10px;">
-        {% for rel_post in related_posts %}
-          <div class="post" style="margin:0;cursor:pointer;" onclick="window.location.href='{{ url_for('post_detail', post_id=rel_post['id'], slug=rel_post['slug']) }}'">
-            <h4 style="margin:0;font-size:14px;">{{ rel_post['title'] }}</h4>
-            <div style="margin-top:6px;font-size:12px;color:var(--muted);font-weight:700;">
-              {{ rel_post['author_display_name'] }}
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    </div>
-  {% endif %}
-
 {% endblock %}
 
 {% block body_scripts %}
 <script>
-  // ✅ TOC jump + tracker title update
   const currentTitleEl = document.getElementById("currentSection");
+  const tocModal = document.getElementById("writoModalToc");
 
   function jumpToSection(id, title){
-    // close modals via overlay click simulation:
+    // close any open modal
     document.querySelectorAll("[data-writo-close]").forEach(btn => btn.click());
 
     if (currentTitleEl) currentTitleEl.textContent = title;
@@ -230,22 +223,22 @@
     }
   }
 
-  // ✅ scroll-based section title
+  // scroll-based section title update
   function updateActiveTitle(){
     const markers = document.querySelectorAll(".toc-marker");
     if (!markers.length) return;
 
-    let active = markers[0].getAttribute("data-title") || (currentTitleEl ? currentTitleEl.textContent : "Writo");
+    let active = markers[0].getAttribute("data-title") || "";
     markers.forEach(m => {
       const r = m.getBoundingClientRect();
       if (r.top < 160) active = m.getAttribute("data-title") || active;
     });
-    if (currentTitleEl) currentTitleEl.textContent = active;
+    if (currentTitleEl && active) currentTitleEl.textContent = active;
   }
   updateActiveTitle();
   window.addEventListener("scroll", () => requestAnimationFrame(updateActiveTitle), { passive:true });
 
-  // ✅ Report modal open/close (Writo modal style)
+  // Report modal open/close
   const reportModal = document.getElementById("reportModal");
   function openReportModal(type, id, postId=null){
     reportModal.classList.add("open");
@@ -256,14 +249,11 @@
   }
   function closeReportModal(){
     reportModal.classList.remove("open");
-    // overlay sync base.js দিয়েও হবে, তবুও safe:
-    if (!document.body.classList.contains("menuOpen")) {
-      document.body.classList.remove("hasOverlay");
-    }
+    document.body.classList.remove("hasOverlay");
   }
-  // expose globally for inline onclick
+
+  window.jumpToSection = jumpToSection;
   window.openReportModal = openReportModal;
   window.closeReportModal = closeReportModal;
-  window.jumpToSection = jumpToSection;
 </script>
 {% endblock %}
