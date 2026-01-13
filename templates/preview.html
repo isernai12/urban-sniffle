@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block header_title %}{{ post['title'] }}{% endblock %}
+
+{% block header_tracker %}
+    <div class="trackerBar" id="articleTracker">
+        <div class="trackerInner">
+            <div class="progressWrap" aria-label="Reading progress">
+                <svg class="progressSvg" viewBox="0 0 36 36" aria-hidden="true">
+                    <path class="ringTrack" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
+                    <path class="ringFill" id="ringFill" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
+                </svg>
+            </div>
+
+            <div class="trkTitle">
+                <span id="currentSection">{{ post['title'] }}</span>
+            </div>
+
+            {% if toc_items %}
+                <button class="tocBtn" id="tocBtn" type="button" aria-label="Table of contents">
+                    <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </button>
+            {% else %}
+                <div style="width: 30px;"></div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block header_extension %}
+    {% if toc_items %}
+        <div class="moreList" id="moreList">
+            {% for item in toc_items %}
+                <div class="moreItem" onclick="jumpToSection('{{ item.id }}', '{{ item.title }}')">
+                    {{ item.title }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <div class="post">
+        <span class="tag">{{ post['category'] }}</span>
+        <h1 style="margin-top: 10px;">{{ post['title'] }}</h1>
+        <p style="color: #64748b;">{{ post['intro'] }}</p>
+        <div class="author-row">
+            <div class="author-avatar">
+                {% if post['author_profile_pic'] %}
+                    <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="profile">
+                {% else %}
+                    {{ post['author_display_name'][:1] }}
+                {% endif %}
+            </div>
+            <div>
+                <div class="author-name">{{ post['author_display_name'] }}</div>
+                <div class="author-meta">⏱️ {{ post['read_time'] }} পড়া</div>
+            </div>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+
+        {% if post['thumbnail'] %}
+            <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" style="margin-bottom: 20px;">
+        {% endif %}
+
+        <div class="post-content" style="line-height: 1.8; font-size: 1.1em;">
+            {% autoescape false %}
+                {{ content | replace('\n', '<br>') }}
+            {% endautoescape %}
+        </div>
+    </div>
+
+    <script>
+        const currentSection = document.getElementById("currentSection");
+        const moreListContainer = document.getElementById("moreList");
+        const tocBtnElement = document.getElementById("tocBtn");
+
+        if(currentSection) currentSection.textContent = "{{ post['title'] }}";
+
+        if (tocBtnElement && moreListContainer) {
+            tocBtnElement.addEventListener("click", () => {
+                moreListContainer.classList.toggle("open");
+                tocBtnElement.querySelector('.chev').style.transform = moreListContainer.classList.contains("open") ? "rotate(180deg)" : "rotate(0deg)";
+            });
+        }
+
+        function jumpToSection(id, title) {
+            if(moreListContainer) moreListContainer.classList.remove("open");
+            if (tocBtnElement && tocBtnElement.querySelector('.chev')) {
+                tocBtnElement.querySelector('.chev').style.transform = "rotate(0deg)";
+            }
+            if(currentSection) currentSection.textContent = title;
+            const section = document.getElementById(id);
+            if (section) {
+                const offset = 170; 
+                const top = section.getBoundingClientRect().top + window.pageYOffset - offset;
+                window.scrollTo({ top: top, behavior: "smooth" });
+            }
+        }
+    </script>
+{% endblock %}

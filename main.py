@@ -1,7 +1,9 @@
 import os
 import re
 import json
+import math
 import sqlite3
+import time
 from flask import Flask, render_template, request, redirect, url_for, flash, abort
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -9,12 +11,16 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_change_this_in_production'
+APP_START_TIME = time.time()
 
 # কনফিগারেশন
 UPLOAD_FOLDER = 'static/uploads'
+PROFILE_UPLOAD_FOLDER = 'static/profile_uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['PROFILE_UPLOAD_FOLDER'] = PROFILE_UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(PROFILE_UPLOAD_FOLDER, exist_ok=True)
 
 # লগইন ম্যানেজার
 login_manager = LoginManager()
@@ -37,7 +43,18 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
-            is_admin INTEGER DEFAULT 0
+            is_admin INTEGER DEFAULT 0,
+            name TEXT,
+            email TEXT,
+            bio TEXT,
+            hobby TEXT,
+            categories TEXT,
+            social_links TEXT,
+            facebook_link TEXT,
+            website_link TEXT,
+            youtube_link TEXT,
+            profile_pic TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
 
@@ -55,6 +72,7 @@ def init_db():
             is_active INTEGER DEFAULT 1, -- ইউজার চাইলে তার approved পোস্ট লুকাতে পারে
             thumbnail TEXT,
             trending_thumbnail TEXT,
+            slug TEXT,
             toc_data TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(user_id) REFERENCES users(id)
@@ -79,28 +97,136 @@ def init_db():
     conn.execute('CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER, user_id INTEGER, content TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(user_id) REFERENCES users(id))')
     conn.execute('CREATE TABLE IF NOT EXISTS comment_likes (user_id INTEGER, comment_id INTEGER, PRIMARY KEY (user_id, comment_id))')
     conn.execute('CREATE TABLE IF NOT EXISTS bookmarks (user_id INTEGER, post_id INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (user_id, post_id))')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS error_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            message TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
 
+    ensure_user_columns(conn)
+    ensure_post_columns(conn)
     conn.commit()
     conn.close()
 
+def ensure_user_columns(conn):
+    existing_columns = {
+        row['name'] for row in conn.execute("PRAGMA table_info(users)").fetchall()
+    }
+    columns_to_add = {
+        'name': 'TEXT',
+        'email': 'TEXT',
+        'bio': 'TEXT',
+        'hobby': 'TEXT',
+        'categories': 'TEXT',
+        'social_links': 'TEXT',
+        'facebook_link': 'TEXT',
+        'website_link': 'TEXT',
+        'youtube_link': 'TEXT',
+        'profile_pic': 'TEXT',
+        'created_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+    }
+    for column, column_type in columns_to_add.items():
+        if column not in existing_columns:
+            conn.execute(f"ALTER TABLE users ADD COLUMN {column} {column_type}")
+
+def ensure_post_columns(conn):
+    existing_columns = {
+        row['name'] for row in conn.execute("PRAGMA table_info(posts)").fetchall()
+    }
+    columns_to_add = {
+        'slug': 'TEXT'
+    }
+    for column, column_type in columns_to_add.items():
+        if column not in existing_columns:
+            conn.execute(f"ALTER TABLE posts ADD COLUMN {column} {column_type}")
+
 # --- ইউজার মডেল ---
 class User(UserMixin):
-    def __init__(self, id, username, is_admin):
+    def __init__(self, id, username, is_admin, name=None, email=None, profile_pic=None):
         self.id = id
         self.username = username
         self.is_admin = is_admin
+        self.name = name
+        self.email = email
+        self.profile_pic = profile_pic
+
+    @property
+    def display_name(self):
+        return self.name or self.username
 
 @login_manager.user_loader
 def load_user(user_id):
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
     conn.close()
-    if user: return User(user['id'], user['username'], user['is_admin'])
+    if user:
+        return User(user['id'], user['username'], user['is_admin'], user['name'], user['email'], user['profile_pic'])
     return None
 
 # --- হেল্পার ফাংশন ---
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def slugify_text(text):
+    cleaned = re.sub(r'[^\w\s-]', '', (text or '').strip().lower())
+    cleaned = re.sub(r'[\s_-]+', '-', cleaned)
+    return cleaned.strip('-') or 'post'
+
+def calculate_read_time(content):
+    plain_text = re.sub(r'<[^>]+>', ' ', content or '')
+    words = re.findall(r'\w+', plain_text)
+    minutes = max(1, math.ceil(len(words) / 200))
+    return f"{minutes} মিনিট"
+
+def calculate_read_time_minutes(content):
+    plain_text = re.sub(r'<[^>]+>', ' ', content or '')
+    words = re.findall(r'\w+', plain_text)
+    return max(1, math.ceil(len(words) / 200))
+
+def parse_json_list(value):
+    if not value:
+        return []
+    if isinstance(value, list):
+        return value
+    try:
+        data = json.loads(value)
+        if isinstance(data, list):
+            return data
+    except json.JSONDecodeError:
+        pass
+    return [item.strip() for item in str(value).split(',') if item.strip()]
+
+CATEGORY_OPTIONS = [
+    'পাইথন', 'ওয়েব ডেভেলপমেন্ট', 'ডেটা সায়েন্স', 'এআই', 'মোবাইল',
+    'ডিজাইন', 'টেক নিউজ', 'সাইবার সিকিউরিটি', 'ডেভঅপস', 'ক্যারিয়ার'
+]
+
+HOBBY_OPTIONS = [
+    'ভ্রমণ', 'গান শোনা', 'বই পড়া', 'খেলাধুলা', 'ফটোগ্রাফি',
+    'রান্না', 'গেমিং', 'লেখালেখি', 'মুভি', 'ড্রইং'
+]
+
+def build_post_payload(rows):
+    posts = []
+    for row in rows:
+        post = dict(row)
+        author_name = row['author_name'] or row['username']
+        post['author_display_name'] = author_name
+        post['author_profile_pic'] = row['author_profile_pic']
+        post['read_time'] = calculate_read_time(post.get('content', ''))
+        post['slug'] = post.get('slug') or slugify_text(post.get('title'))
+        posts.append(post)
+    return posts
+
+def build_writer_payload(rows):
+    writers = []
+    for row in rows:
+        writer = dict(row)
+        writer['display_name'] = row['name'] or row['username']
+        writers.append(writer)
+    return writers
 
 # গ্লোবাল ডাটা (বুকমার্ক) সব টেমপ্লেটে পাঠানোর জন্য
 @app.context_processor
@@ -109,13 +235,16 @@ def inject_global_data():
     if current_user.is_authenticated:
         conn = get_db_connection()
         bookmarks = conn.execute('''
-            SELECT posts.id, posts.title, posts.thumbnail 
+            SELECT posts.id, posts.title, posts.thumbnail, posts.slug
             FROM bookmarks 
             JOIN posts ON bookmarks.post_id = posts.id 
             WHERE bookmarks.user_id = ? 
             ORDER BY bookmarks.created_at DESC
         ''', (current_user.id,)).fetchall()
         conn.close()
+        bookmarks = [
+            dict(row, slug=row['slug'] or slugify_text(row['title'])) for row in bookmarks
+        ]
     return dict(my_bookmarks=bookmarks)
 
 # --- অথেন্টিকেশন রাউটস ---
@@ -124,6 +253,8 @@ def inject_global_data():
 def signup():
     if request.method == 'POST':
         username = request.form['username']
+        email = request.form['email']
+        name = request.form.get('name') or None
         password = request.form['password']
         hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
         conn = get_db_connection()
@@ -132,8 +263,8 @@ def signup():
             user_count = conn.execute('SELECT COUNT(*) FROM users').fetchone()[0]
             is_admin = 1 if user_count == 0 else 0
 
-            conn.execute('INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?)', 
-                         (username, hashed_pw, is_admin))
+            conn.execute('INSERT INTO users (username, password, is_admin, name, email) VALUES (?, ?, ?, ?, ?)', 
+                         (username, hashed_pw, is_admin, name, email))
             conn.commit()
             flash('অ্যাকাউন্ট তৈরি সফল! এখন লগইন করুন।')
             return redirect(url_for('login'))
@@ -146,18 +277,34 @@ def signup():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
+        identifier = request.form['identifier']
         password = request.form['password']
         conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+        user = conn.execute('SELECT * FROM users WHERE username = ? OR email = ?', (identifier, identifier)).fetchone()
         conn.close()
 
         if user and check_password_hash(user['password'], password):
-            login_user(User(user['id'], user['username'], user['is_admin']))
+            login_user(User(user['id'], user['username'], user['is_admin'], user['name'], user['email'], user['profile_pic']))
             return redirect(url_for('index'))
         else:
-            flash('ভুল ইউজারনেম বা পাসওয়ার্ড।')
+            flash('ভুল ইমেইল/ইউজারনেম বা পাসওয়ার্ড।')
     return render_template('login.html')
+
+@app.errorhandler(500)
+def handle_internal_error(error):
+    conn = get_db_connection()
+    conn.execute("INSERT INTO error_logs (message) VALUES (?)", (str(error),))
+    conn.commit()
+    conn.close()
+    return "Internal Server Error", 500
+
+@app.errorhandler(404)
+def handle_not_found(error):
+    conn = get_db_connection()
+    conn.execute("INSERT INTO error_logs (message) VALUES (?)", (str(error),))
+    conn.commit()
+    conn.close()
+    return "Not Found", 404
 
 @app.route('/logout')
 @login_required
@@ -173,28 +320,66 @@ def index():
     # ফিল্টার: status='approved' AND is_active=1
 
     # ১. ট্রেন্ডিং (Views অনুযায়ী Top 5)
-    trending_posts = conn.execute("SELECT * FROM posts WHERE status='approved' AND is_active=1 ORDER BY views DESC LIMIT 5").fetchall()
+    trending_posts = conn.execute("""
+        SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
+        FROM posts
+        JOIN users ON posts.user_id = users.id
+        WHERE posts.status='approved' AND posts.is_active=1
+        ORDER BY posts.views DESC
+        LIMIT 5
+    """).fetchall()
+    trending_posts = build_post_payload(trending_posts)
 
     # ২. লেটেস্ট (Top 10)
-    latest_posts = conn.execute("SELECT * FROM posts WHERE status='approved' AND is_active=1 ORDER BY id DESC LIMIT 10").fetchall()
+    latest_posts = conn.execute("""
+        SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
+        FROM posts
+        JOIN users ON posts.user_id = users.id
+        WHERE posts.status='approved' AND posts.is_active=1
+        ORDER BY posts.id DESC
+        LIMIT 10
+    """).fetchall()
+    latest_posts = build_post_payload(latest_posts)
 
     # ৩. ক্যাটাগরি সেকশন
     categories = conn.execute("SELECT DISTINCT category FROM posts WHERE status='approved' AND is_active=1 LIMIT 2").fetchall()
     category_sections = []
     for cat in categories:
         cat_name = cat['category']
-        posts = conn.execute("SELECT * FROM posts WHERE category = ? AND status='approved' AND is_active=1 ORDER BY id DESC LIMIT 3", (cat_name,)).fetchall()
+        posts = conn.execute("""
+            SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
+            FROM posts
+            JOIN users ON posts.user_id = users.id
+            WHERE posts.category = ? AND posts.status='approved' AND posts.is_active=1
+            ORDER BY posts.id DESC
+            LIMIT 3
+        """, (cat_name,)).fetchall()
+        posts = build_post_payload(posts)
         if posts:
             category_sections.append({'name': cat_name, 'posts': posts})
 
     all_categories = conn.execute("SELECT DISTINCT category FROM posts WHERE status='approved' AND is_active=1").fetchall()
+
+    top_writers = conn.execute("""
+        SELECT users.id, users.username, users.name, users.profile_pic,
+               COUNT(posts.id) as post_count,
+               COALESCE(SUM(posts.views), 0) as total_views
+        FROM users
+        JOIN posts ON posts.user_id = users.id
+        WHERE posts.status='approved' AND posts.is_active=1
+        GROUP BY users.id
+        ORDER BY total_views DESC
+        LIMIT 5
+    """).fetchall()
+    top_writers = build_writer_payload(top_writers)
     conn.close()
 
     return render_template('index.html', 
                            trending_posts=trending_posts, 
                            latest_posts=latest_posts, 
                            category_sections=category_sections, 
-                           all_categories=all_categories)
+                           all_categories=all_categories,
+                           top_writers=top_writers)
 
 @app.route('/list')
 def post_list():
@@ -206,10 +391,23 @@ def post_list():
 
     if filter_type == 'latest':
         page_title = "সর্বশেষ সকল পোস্ট"
-        posts = conn.execute("SELECT * FROM posts WHERE status='approved' AND is_active=1 ORDER BY id DESC").fetchall()
+        posts = conn.execute("""
+            SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
+            FROM posts
+            JOIN users ON posts.user_id = users.id
+            WHERE posts.status='approved' AND posts.is_active=1
+            ORDER BY posts.id DESC
+        """).fetchall()
     elif filter_type == 'category' and cat_name:
         page_title = f"ক্যাটাগরি: {cat_name}"
-        posts = conn.execute("SELECT * FROM posts WHERE category = ? AND status='approved' AND is_active=1 ORDER BY id DESC", (cat_name,)).fetchall()
+        posts = conn.execute("""
+            SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
+            FROM posts
+            JOIN users ON posts.user_id = users.id
+            WHERE posts.category = ? AND posts.status='approved' AND posts.is_active=1
+            ORDER BY posts.id DESC
+        """, (cat_name,)).fetchall()
+    posts = build_post_payload(posts)
 
     all_categories = conn.execute("SELECT DISTINCT category FROM posts WHERE status='approved' AND is_active=1").fetchall()
     conn.close()
@@ -225,16 +423,65 @@ def search():
     if query:
         search_term = f"%{query}%"
         posts = conn.execute('''
-            SELECT * FROM posts 
+            SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
+            FROM posts
+            JOIN users ON posts.user_id = users.id
             WHERE (title LIKE ? OR content LIKE ? OR category LIKE ?) 
-            AND status='approved' AND is_active=1 
-            ORDER BY id DESC
+            AND posts.status='approved' AND posts.is_active=1 
+            ORDER BY posts.id DESC
         ''', (search_term, search_term, search_term)).fetchall()
         title = f"'{query}' এর জন্য সার্চ রেজাল্ট"
+        posts = build_post_payload(posts)
 
     all_categories = conn.execute("SELECT DISTINCT category FROM posts WHERE status='approved' AND is_active=1").fetchall()
     conn.close()
     return render_template('list.html', posts=posts, title=title, all_categories=all_categories)
+
+@app.route('/writers')
+def writers_list():
+    conn = get_db_connection()
+    writers = conn.execute("""
+        SELECT users.id, users.username, users.name, users.profile_pic,
+               COUNT(posts.id) as post_count,
+               COALESCE(SUM(posts.views), 0) as total_views
+        FROM users
+        JOIN posts ON posts.user_id = users.id
+        WHERE posts.status='approved' AND posts.is_active=1
+        GROUP BY users.id
+        ORDER BY total_views DESC
+    """).fetchall()
+    writers = build_writer_payload(writers)
+    all_categories = conn.execute("SELECT DISTINCT category FROM posts WHERE status='approved' AND is_active=1").fetchall()
+    conn.close()
+    return render_template('writers.html', writers=writers, all_categories=all_categories)
+
+@app.route('/writer/<int:user_id>')
+def public_profile(user_id):
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    if not user:
+        conn.close()
+        return "Not Found", 404
+    selected_categories = parse_json_list(user['categories'])
+    selected_hobbies = parse_json_list(user['hobby'])
+    posts = conn.execute("""
+        SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
+        FROM posts
+        JOIN users ON posts.user_id = users.id
+        WHERE posts.user_id = ? AND posts.status='approved' AND posts.is_active=1
+        ORDER BY posts.id DESC
+    """, (user_id,)).fetchall()
+    posts = build_post_payload(posts)
+    all_categories = conn.execute("SELECT DISTINCT category FROM posts WHERE status='approved' AND is_active=1").fetchall()
+    conn.close()
+    return render_template(
+        'public_profile.html',
+        user=user,
+        posts=posts,
+        all_categories=all_categories,
+        selected_categories=selected_categories,
+        selected_hobbies=selected_hobbies
+    )
 
 # --- ইউজার এরিয়া (পোস্ট তৈরি ও ম্যানেজ) ---
 
@@ -291,12 +538,13 @@ def create():
                 return f'<span id="{unique_id}" class="toc-marker" data-title="{toc_title}"></span>'
             processed_content = re.sub(r'\[toc:(.*?)\]', replace_and_build_toc, raw_content)
             toc_json = json.dumps(toc_list)
+            slug = slugify_text(title)
 
             conn = get_db_connection()
             conn.execute('''
-                INSERT INTO posts (user_id, title, intro, content, category, status, thumbnail, trending_thumbnail, toc_data) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (current_user.id, title, intro, processed_content, category, status, filename, trending_filename, toc_json))
+                INSERT INTO posts (user_id, title, intro, content, category, status, thumbnail, trending_thumbnail, toc_data, slug) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (current_user.id, title, intro, processed_content, category, status, filename, trending_filename, toc_json, slug))
             conn.commit()
             conn.close()
 
@@ -332,10 +580,20 @@ def edit_post(post_id):
         if action == 'submit': status = 'pending'
         if action == 'draft': status = 'draft'
 
+        toc_list = []
+        def replace_and_build_toc(match):
+            toc_title = match.group(1)
+            unique_id = f"toc-{len(toc_list)}"
+            toc_list.append({'id': unique_id, 'title': toc_title})
+            return f'<span id="{unique_id}" class="toc-marker" data-title="{toc_title}"></span>'
+        processed_content = re.sub(r'\[toc:(.*?)\]', replace_and_build_toc, raw_content)
+        toc_json = json.dumps(toc_list)
+        slug = slugify_text(title)
+
         # ফাইল আপলোড লজিক (সংক্ষিপ্ত রাখার জন্য এখানে পুরোটা রিপিট করা হলো না, create এর মতোই হবে)
         # ডাটাবেস আপডেট:
-        conn.execute('UPDATE posts SET title=?, intro=?, content=?, category=?, status=? WHERE id=?', 
-                     (title, intro, raw_content, category, status, post_id))
+        conn.execute('UPDATE posts SET title=?, intro=?, content=?, category=?, status=?, toc_data=?, slug=? WHERE id=?', 
+                     (title, intro, processed_content, category, status, toc_json, slug, post_id))
         conn.commit()
         conn.close()
         flash('পোস্ট আপডেট করা হয়েছে!')
@@ -377,36 +635,124 @@ def admin_dashboard():
 
     conn = get_db_connection()
 
-    # ১. পেন্ডিং পোস্ট (রিভিউয়ের জন্য)
-    pending_posts = conn.execute('''
-        SELECT posts.*, users.username 
-        FROM posts JOIN users ON posts.user_id = users.id 
-        WHERE status = 'pending'
-    ''').fetchall()
+    pending_count = conn.execute("SELECT COUNT(*) FROM posts WHERE status = 'pending'").fetchone()[0]
+    post_report_count = conn.execute("SELECT COUNT(*) FROM reports WHERE post_id IS NOT NULL").fetchone()[0]
+    comment_report_count = conn.execute("SELECT COUNT(*) FROM reports WHERE comment_id IS NOT NULL").fetchone()[0]
 
-    # ২. পোস্ট রিপোর্টস
+    conn.close()
+    return render_template('admin_dashboard.html',
+                           pending_count=pending_count,
+                           post_report_count=post_report_count,
+                           comment_report_count=comment_report_count)
+
+@app.route('/admin/status')
+@login_required
+def admin_status():
+    if not current_user.is_admin:
+        return "Access Denied", 403
+    conn = get_db_connection()
+    total_views = conn.execute("SELECT COALESCE(SUM(views), 0) FROM posts").fetchone()[0]
+    total_users = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+    total_posts = conn.execute("SELECT COUNT(*) FROM posts").fetchone()[0]
+    new_users_today = conn.execute(
+        "SELECT COUNT(*) FROM users WHERE DATE(created_at) = DATE('now')"
+    ).fetchone()[0]
+    new_posts_today = conn.execute(
+        "SELECT COUNT(*) FROM posts WHERE DATE(created_at) = DATE('now')"
+    ).fetchone()[0]
+    errors_today = conn.execute(
+        "SELECT COUNT(*) FROM error_logs WHERE DATE(created_at) = DATE('now')"
+    ).fetchone()[0]
+    avg_read_time_minutes = conn.execute(
+        "SELECT AVG(LENGTH(content)) FROM posts WHERE status='approved' AND is_active=1"
+    ).fetchone()[0]
+    avg_read_time_minutes = 0 if avg_read_time_minutes is None else avg_read_time_minutes
+    avg_read_time_minutes = max(1, math.ceil((avg_read_time_minutes / 5) / 200))
+    uptime_seconds = int(time.time() - APP_START_TIME)
+    uptime_hours = uptime_seconds // 3600
+    uptime_minutes = (uptime_seconds % 3600) // 60
+    conn.close()
+    return render_template(
+        'admin_status.html',
+        total_views=total_views,
+        total_users=total_users,
+        total_posts=total_posts,
+        new_users_today=new_users_today,
+        new_posts_today=new_posts_today,
+        errors_today=errors_today,
+        uptime_hours=uptime_hours,
+        uptime_minutes=uptime_minutes,
+        avg_read_time_minutes=avg_read_time_minutes
+    )
+
+@app.route('/admin/pending')
+@login_required
+def admin_pending_posts():
+    if not current_user.is_admin:
+        return "Access Denied", 403
+    conn = get_db_connection()
+    pending_posts = conn.execute('''
+        SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
+        FROM posts
+        JOIN users ON posts.user_id = users.id
+        WHERE posts.status = 'pending'
+        ORDER BY posts.created_at DESC
+    ''').fetchall()
+    conn.close()
+    pending_posts = build_post_payload(pending_posts)
+    return render_template('admin_pending.html', pending_posts=pending_posts)
+
+@app.route('/admin/reports')
+@login_required
+def admin_reports():
+    if not current_user.is_admin:
+        return "Access Denied", 403
+    conn = get_db_connection()
     post_reports = conn.execute('''
-        SELECT reports.*, posts.title, users.username as reporter_name
-        FROM reports 
+        SELECT reports.*, posts.title, posts.slug as post_slug, users.username as reporter_name
+        FROM reports
         JOIN posts ON reports.post_id = posts.id
         JOIN users ON reports.reporter_id = users.id
         WHERE reports.post_id IS NOT NULL
+        ORDER BY reports.created_at DESC
     ''').fetchall()
+    post_reports = [
+        dict(row, post_slug=row['post_slug'] or slugify_text(row['title']))
+        for row in post_reports
+    ]
 
-    # ৩. কমেন্ট রিপোর্টস
     comment_reports = conn.execute('''
         SELECT reports.*, comments.content as comment_content, users.username as reporter_name
-        FROM reports 
+        FROM reports
         JOIN comments ON reports.comment_id = comments.id
         JOIN users ON reports.reporter_id = users.id
         WHERE reports.comment_id IS NOT NULL
+        ORDER BY reports.created_at DESC
     ''').fetchall()
-
     conn.close()
-    return render_template('admin_dashboard.html', 
-                           pending_posts=pending_posts, 
-                           post_reports=post_reports, 
-                           comment_reports=comment_reports)
+    return render_template('admin_reports.html', post_reports=post_reports, comment_reports=comment_reports)
+
+@app.route('/preview/<int:post_id>')
+@login_required
+def admin_preview(post_id):
+    if not current_user.is_admin:
+        return "Access Denied", 403
+    conn = get_db_connection()
+    post = conn.execute('''
+        SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
+        FROM posts
+        JOIN users ON posts.user_id = users.id
+        WHERE posts.id = ?
+    ''', (post_id,)).fetchone()
+    conn.close()
+    if not post:
+        return "Not Found", 404
+    post = dict(post)
+    post['author_display_name'] = post['author_name'] or post['username']
+    post['read_time'] = calculate_read_time(post.get('content', ''))
+    post['slug'] = post.get('slug') or slugify_text(post.get('title'))
+    toc_items = json.loads(post['toc_data']) if post['toc_data'] else []
+    return render_template('preview.html', post=post, content=post['content'], toc_items=toc_items)
 
 @app.route('/admin_action_post/<int:post_id>/<action>')
 @login_required
@@ -472,13 +818,32 @@ def report_content():
 
 # --- ডিটেইলস পেজ ---
 @app.route('/post/<int:post_id>')
-def post_detail(post_id):
+def post_redirect(post_id):
     conn = get_db_connection()
-    post = conn.execute('SELECT * FROM posts WHERE id = ?', (post_id,)).fetchone()
+    post = conn.execute('SELECT id, title, slug FROM posts WHERE id = ?', (post_id,)).fetchone()
+    conn.close()
+    if not post:
+        return "Not Found", 404
+    slug = post['slug'] or slugify_text(post['title'])
+    return redirect(url_for('post_detail', post_id=post_id, slug=slug))
+
+@app.route('/post/<int:post_id>/<slug>')
+def post_detail(post_id, slug):
+    conn = get_db_connection()
+    post = conn.execute('''
+        SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
+        FROM posts
+        JOIN users ON posts.user_id = users.id
+        WHERE posts.id = ?
+    ''', (post_id,)).fetchone()
 
     if not post: 
         conn.close()
         return "Not Found", 404
+    post = dict(post)
+    post['author_display_name'] = post['author_name'] or post['username']
+    post['read_time'] = calculate_read_time(post.get('content', ''))
+    post['slug'] = post.get('slug') or slugify_text(post.get('title'))
 
     # অ্যাক্সেস লজিক:
     is_author = current_user.is_authenticated and post['user_id'] == current_user.id
@@ -496,7 +861,14 @@ def post_detail(post_id):
         conn.commit()
 
     # রিলেটেড পোস্ট (শুধু এপ্রুভড)
-    related_posts = conn.execute("SELECT * FROM posts WHERE category = ? AND id != ? AND status='approved' AND is_active=1 ORDER BY id DESC LIMIT 3", (post['category'], post_id)).fetchall()
+    related_posts = conn.execute("""
+        SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
+        FROM posts
+        JOIN users ON posts.user_id = users.id
+        WHERE posts.category = ? AND posts.id != ? AND posts.status='approved' AND posts.is_active=1
+        ORDER BY posts.id DESC LIMIT 3
+    """, (post['category'], post_id)).fetchall()
+    related_posts = build_post_payload(related_posts)
 
     # কমেন্ট এবং লাইক ডাটা
     comments_data = conn.execute('SELECT comments.*, users.username, (SELECT COUNT(*) FROM comment_likes WHERE comment_id = comments.id) as like_count FROM comments JOIN users ON comments.user_id = users.id WHERE post_id = ? ORDER BY id DESC', (post_id,)).fetchall()
@@ -516,6 +888,86 @@ def post_detail(post_id):
 
     conn.close()
     return render_template('detail.html', post=post, content=post['content'], toc_items=toc_items, related_posts=related_posts, comments=comments_data, post_like_count=post_like_count, user_liked_post=user_liked_post, liked_comments=liked_comments, is_bookmarked=is_bookmarked)
+
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def manage_profile():
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM users WHERE id = ?', (current_user.id,)).fetchone()
+    if not user:
+        conn.close()
+        return "Not Found", 404
+    if request.method == 'POST':
+        name = request.form.get('name') or None
+        email = request.form.get('email') or None
+        bio = request.form.get('bio') or None
+        selected_hobbies = request.form.getlist('hobby')
+        selected_categories = request.form.getlist('categories')
+        facebook_link = request.form.get('facebook_link') or None
+        website_link = request.form.get('website_link') or None
+        youtube_link = request.form.get('youtube_link') or None
+        profile_pic = user['profile_pic']
+
+        if len(selected_hobbies) > 3:
+            conn.close()
+            flash('সর্বোচ্চ ৩টি হবি সিলেক্ট করতে পারবেন।')
+            return redirect(url_for('manage_profile'))
+        if len(selected_categories) > 3:
+            conn.close()
+            flash('সর্বোচ্চ ৩টি ক্যাটাগরি সিলেক্ট করতে পারবেন।')
+            return redirect(url_for('manage_profile'))
+
+        file = request.files.get('profile_pic')
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['PROFILE_UPLOAD_FOLDER'], filename))
+            profile_pic = filename
+
+        new_password = request.form.get('new_password')
+        current_password = request.form.get('current_password')
+        confirm_password = request.form.get('confirm_password')
+        if new_password:
+            if not current_password or not check_password_hash(user['password'], current_password):
+                conn.close()
+                flash('বর্তমান পাসওয়ার্ড সঠিক নয়।')
+                return redirect(url_for('manage_profile'))
+            if new_password != confirm_password:
+                conn.close()
+                flash('নতুন পাসওয়ার্ড মিলছে না।')
+                return redirect(url_for('manage_profile'))
+            hashed_pw = generate_password_hash(new_password, method='pbkdf2:sha256')
+            conn.execute('UPDATE users SET password = ? WHERE id = ?', (hashed_pw, current_user.id))
+
+        conn.execute('''
+            UPDATE users
+            SET name = ?, email = ?, bio = ?, hobby = ?, categories = ?, facebook_link = ?, website_link = ?, youtube_link = ?, profile_pic = ?
+            WHERE id = ?
+        ''', (
+            name,
+            email,
+            bio,
+            json.dumps(selected_hobbies),
+            json.dumps(selected_categories),
+            facebook_link,
+            website_link,
+            youtube_link,
+            profile_pic,
+            current_user.id
+        ))
+        conn.commit()
+        conn.close()
+        flash('প্রোফাইল আপডেট করা হয়েছে।')
+        return redirect(url_for('manage_profile'))
+
+    conn.close()
+    return render_template(
+        'profile.html',
+        user=user,
+        category_options=CATEGORY_OPTIONS,
+        hobby_options=HOBBY_OPTIONS,
+        selected_categories=parse_json_list(user['categories']),
+        selected_hobbies=parse_json_list(user['hobby'])
+    )
 
 # --- ইন্টারঅ্যাকশন রাউটস (লাইক, কমেন্ট, বুকমার্ক) ---
 @app.route('/like_post/<int:post_id>')

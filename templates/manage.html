@@ -71,7 +71,7 @@
                 </a>
                 <a href="{{ url_for('edit_post', post_id=post['id']) }}" class="action-btn btn-edit">✏️</a>
                 <a href="{{ url_for('delete_post', post_id=post['id']) }}" class="action-btn btn-delete" onclick="return confirm('আপনি কি নিশ্চিত?')">🗑️</a>
-                <a href="{{ url_for('post_detail', post_id=post['id']) }}" class="action-btn" style="background: #2563eb;">👁️</a>
+                <a href="{{ url_for('post_detail', post_id=post['id'], slug=post['slug']) }}" class="action-btn" style="background: #2563eb;">👁️</a>
             </td>
         </tr>
         {% else %}

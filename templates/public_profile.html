@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="post">
+    <div class="author-row" style="margin-top: 0;">
+        <div class="author-avatar" style="width: 64px; height: 64px; font-size: 1.1rem;">
+            {% if user['profile_pic'] %}
+                <img src="{{ url_for('static', filename='profile_uploads/' + user['profile_pic']) }}" alt="profile">
+            {% else %}
+                {{ (user['name'] or user['username'])[:1] }}
+            {% endif %}
+        </div>
+        <div>
+            <div class="author-name" style="font-size: 1.1rem;">{{ user['name'] or user['username'] }}</div>
+            <div class="author-meta">ইউজারনেম: {{ user['username'] }}</div>
+        </div>
+    </div>
+
+    {% if user['bio'] %}
+        <p style="margin-top: 15px; color: #475569;">{{ user['bio'] }}</p>
+    {% endif %}
+
+    <div style="display: grid; gap: 10px; margin-top: 15px;">
+        {% if selected_hobbies %}
+            <div><strong>হবি:</strong> {{ selected_hobbies | join(', ') }}</div>
+        {% endif %}
+        {% if selected_categories %}
+            <div><strong>ক্যাটাগরি:</strong> {{ selected_categories | join(', ') }}</div>
+        {% endif %}
+        {% if user['facebook_link'] %}
+            <div><strong>ফেসবুক:</strong> <a href="{{ user['facebook_link'] }}" target="_blank">{{ user['facebook_link'] }}</a></div>
+        {% endif %}
+        {% if user['website_link'] %}
+            <div><strong>ওয়েবসাইট:</strong> <a href="{{ user['website_link'] }}" target="_blank">{{ user['website_link'] }}</a></div>
+        {% endif %}
+        {% if user['youtube_link'] %}
+            <div><strong>ইউটিউব:</strong> <a href="{{ user['youtube_link'] }}" target="_blank">{{ user['youtube_link'] }}</a></div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="section-header">
+    <span class="section-title">রাইটারের পোস্ট</span>
+</div>
+
+{% for post in posts %}
+    <div class="post">
+        <span class="tag">{{ post['category'] }}</span>
+        <h2>{{ post['title'] }}</h2>
+        <p>{{ post['intro'] }}</p>
+        <div class="author-row">
+            <div class="author-avatar">
+                {% if post['author_profile_pic'] %}
+                    <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="profile">
+                {% else %}
+                    {{ post['author_display_name'][:1] }}
+                {% endif %}
+            </div>
+            <div>
+                <div class="author-name">{{ post['author_display_name'] }}</div>
+                <div class="author-meta">⏱️ {{ post['read_time'] }} পড়া</div>
+            </div>
+        </div>
+        <a href="{{ url_for('post_detail', post_id=post['id'], slug=post['slug']) }}" class="sub-btn" style="display: inline-block; width: auto; padding: 8px 15px; text-decoration: none;">বিস্তারিত পড়ুন</a>
+    </div>
+{% else %}
+    <p style="text-align: center; color: #666;">এই রাইটারের কোনো পোস্ট নেই।</p>
+{% endfor %}
+{% endblock %}

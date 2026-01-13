@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="post">
+    <h1>রিপোর্ট করা কনটেন্ট</h1>
+
+    <h3 style="border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-top: 20px;">পোস্ট রিপোর্ট</h3>
+    <table style="width: 100%; margin-top: 10px;">
+        {% for report in post_reports %}
+        <tr>
+            <td>
+                পোস্ট: <strong>{{ report['title'] }}</strong> <br>
+                রিপোর্টার: {{ report['reporter_name'] }} | কারণ: {{ report['reason'] }}
+            </td>
+            <td>
+                <a href="{{ url_for('post_detail', post_id=report['post_id'], slug=report['post_slug']) }}" target="_blank">দেখুন</a>
+                <a href="/admin_action_report/{{ report['id'] }}/delete_content" style="color: red;">🗑️ Delete Post</a>
+                <a href="/admin_action_report/{{ report['id'] }}/dismiss" style="color: gray;">Ignore</a>
+            </td>
+        </tr>
+        {% else %}
+            <tr><td colspan="2">কোনো পোস্ট রিপোর্ট নেই।</td></tr>
+        {% endfor %}
+    </table>
+
+    <h3 style="border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-top: 25px;">কমেন্ট রিপোর্ট</h3>
+    <table style="width: 100%; margin-top: 10px;">
+        {% for report in comment_reports %}
+        <tr>
+            <td>
+                কমেন্ট: <i>"{{ report['comment_content'] }}"</i> <br>
+                রিপোর্টার: {{ report['reporter_name'] }} | কারণ: {{ report['reason'] }}
+            </td>
+            <td>
+                <a href="/admin_action_report/{{ report['id'] }}/delete_content" style="color: red;">🗑️ Delete Comment</a>
+                <a href="/admin_action_report/{{ report['id'] }}/dismiss" style="color: gray;">Ignore</a>
+            </td>
+        </tr>
+        {% else %}
+            <tr><td colspan="2">কোনো কমেন্ট রিপোর্ট নেই।</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

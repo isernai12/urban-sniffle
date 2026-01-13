@@ -42,7 +42,10 @@
             <label>বিস্তারিত (কন্টেন্টে [toc:..] ব্যবহার করলে নতুন করে TOC তৈরি হবে)</label>
             <textarea name="content" rows="15" required>{{ post['content'] }}</textarea>
             
-            <button type="submit" class="sub-btn" style="background: #f59e0b;">আপডেট করুন</button>
+            <div style="display: grid; gap: 10px;">
+                <button type="submit" name="action" value="draft" class="sub-btn" style="background: #64748b;">ড্রাফট হিসেবে সেভ</button>
+                <button type="submit" name="action" value="submit" class="sub-btn" style="background: #2563eb;">এডমিনের কাছে সাবমিট</button>
+            </div>
         </form>
     </div>
 {% endblock %}

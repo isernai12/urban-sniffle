@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="post">
+    <h1>পেন্ডিং পোস্ট রিভিউ</h1>
+    <table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
+        {% for post in pending_posts %}
+        <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 12px 10px;">
+                <strong>{{ post['title'] }}</strong> <br>
+                <div class="author-row">
+                    <div class="author-avatar">
+                        {% if post['author_profile_pic'] %}
+                            <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="profile">
+                        {% else %}
+                            {{ post['author_display_name'][:1] }}
+                        {% endif %}
+                    </div>
+                    <div>
+                        <div class="author-name">{{ post['author_display_name'] }}</div>
+                        <div class="author-meta">⏱️ {{ post['read_time'] }} পড়া</div>
+                    </div>
+                </div>
+            </td>
+            <td style="text-align: right; padding: 12px 10px;">
+                <a href="/preview/{{ post['id'] }}" target="_blank" style="color: #2563eb;">👁️ প্রিভিউ</a>
+                <a href="/admin_action_post/{{ post['id'] }}/approve" style="color: green; margin-left: 10px;">✅ Approve</a>
+                <a href="/admin_action_post/{{ post['id'] }}/reject" style="color: red; margin-left: 10px;">❌ Reject</a>
+            </td>
+        </tr>
+        {% else %}
+            <tr><td colspan="2">কোনো পেন্ডিং পোস্ট নেই।</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}
