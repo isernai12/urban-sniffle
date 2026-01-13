@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="auth-form">
+    <h2 style="text-align: center; margin-bottom: 20px;">সাইন আপ</h2>
+    <form method="post">
+        <label>ইউজারনেম</label>
+        <input type="text" name="username" required>
+        <label>পাসওয়ার্ড</label>
+        <input type="password" name="password" required>
+        <button type="submit" class="sub-btn" style="background: #10b981;">অ্যাকাউন্ট খুলুন</button>
+    </form>
+    <p style="text-align: center; margin-top: 15px;">
+        আগেই অ্যাকাউন্ট আছে? <a href="/login">লগ ইন করুন</a>
+    </p>
+</div>
+{% endblock %}

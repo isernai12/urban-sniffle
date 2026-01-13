@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .manage-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .search-box input { padding: 10px; border-radius: 8px; border: 1px solid #ddd; width: 250px; }
+    .search-box button { padding: 10px 15px; border-radius: 8px; border: none; background: #2563eb; color: white; cursor: pointer; }
+    
+    .manage-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .manage-table th, .manage-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+    .manage-table th { background: #f8fafc; font-weight: bold; color: #475569; }
+    .manage-table tr:hover { background: #f1f5f9; }
+    
+    .status-active { color: green; font-weight: bold; }
+    .status-inactive { color: red; font-weight: bold; }
+    
+    .action-btn { padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 0.85em; margin-right: 5px; color: white; display: inline-block; }
+    .btn-edit { background: #f59e0b; }
+    .btn-delete { background: #ef4444; }
+    .btn-toggle { background: #64748b; }
+
+    .pagination { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+    .page-link { padding: 8px 12px; background: white; border: 1px solid #ddd; text-decoration: none; color: #333; border-radius: 4px; }
+    .page-link.active { background: #2563eb; color: white; border-color: #2563eb; }
+    .page-link:hover:not(.active) { background: #f1f5f9; }
+</style>
+
+<div class="manage-header">
+    <h2>পোস্ট ম্যানেজমেন্ট</h2>
+    <form class="search-box" action="/manage_posts" method="get">
+        <input type="text" name="q" placeholder="টাইটেল দিয়ে খুঁজুন..." value="{{ search_query }}">
+        <button type="submit">খুঁজুন</button>
+    </form>
+</div>
+
+<table class="manage-table">
+    <thead>
+        <tr>
+            <th>ছবি</th>
+            <th>শিরোনাম</th>
+            <th>ক্যাটাগরি</th>
+            <th>স্ট্যাটাস</th>
+            <th>অ্যাকশন</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for post in posts %}
+        <tr>
+            <td>
+                {% if post['thumbnail'] %}
+                    <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                {% else %}
+                    <span>No Image</span>
+                {% endif %}
+            </td>
+            <td>
+                {{ post['title'] }} <br>
+                <small style="color: #666;">Views: {{ post['views'] }}</small>
+            </td>
+            <td><span class="tag">{{ post['category'] }}</span></td>
+            <td>
+                {% if post['is_active'] %}
+                    <span class="status-active">Active</span>
+                {% else %}
+                    <span class="status-inactive">Inactive</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('toggle_status', post_id=post['id']) }}" class="action-btn btn-toggle" title="Change Status">
+                    {% if post['is_active'] %} 🚫 {% else %} ✅ {% endif %}
+                </a>
+                <a href="{{ url_for('edit_post', post_id=post['id']) }}" class="action-btn btn-edit">✏️</a>
+                <a href="{{ url_for('delete_post', post_id=post['id']) }}" class="action-btn btn-delete" onclick="return confirm('আপনি কি নিশ্চিত?')">🗑️</a>
+                <a href="{{ url_for('post_detail', post_id=post['id']) }}" class="action-btn" style="background: #2563eb;">👁️</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" style="text-align: center; padding: 20px;">কোনো পোস্ট পাওয়া যায়নি।</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+        <a href="{{ url_for('manage_posts', page=page-1, q=search_query) }}" class="page-link">&laquo; Prev</a>
+    {% endif %}
+    
+    {% for p in range(1, total_pages + 1) %}
+        <a href="{{ url_for('manage_posts', page=p, q=search_query) }}" class="page-link {% if p == page %}active{% endif %}">{{ p }}</a>
+    {% endfor %}
+    
+    {% if page < total_pages %}
+        <a href="{{ url_for('manage_posts', page=page+1, q=search_query) }}" class="page-link">Next &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

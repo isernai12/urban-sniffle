@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="post">
+    <h1>অ্যাডমিন ড্যাশবোর্ড</h1>
+    
+    <h3 style="border-bottom: 2px solid #ddd; padding-bottom: 5px;">🛑 পেন্ডিং পোস্ট ({{ pending_posts|length }})</h3>
+    <table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
+        {% for post in pending_posts %}
+        <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 10px;">
+                <strong>{{ post['title'] }}</strong> <br>
+                <small>লেখক: {{ post['username'] }}</small>
+            </td>
+            <td style="text-align: right;">
+                <a href="/post/{{ post['id'] }}" target="_blank" style="color: blue;">👁️ দেখুন</a>
+                <a href="/admin_action_post/{{ post['id'] }}/approve" style="color: green; margin-left: 10px;">✅ Approve</a>
+                <a href="/admin_action_post/{{ post['id'] }}/reject" style="color: red; margin-left: 10px;">❌ Reject</a>
+            </td>
+        </tr>
+        {% else %}
+            <tr><td colspan="2">কোনো পেন্ডিং পোস্ট নেই।</td></tr>
+        {% endfor %}
+    </table>
+
+    <br><br>
+
+    <h3 style="border-bottom: 2px solid #ddd; padding-bottom: 5px; color: #ef4444;">⚠️ রিপোর্ট করা পোস্ট/কমেন্ট</h3>
+    
+    <h4>পোস্ট রিপোর্ট</h4>
+    <table style="width: 100%;">
+        {% for report in post_reports %}
+        <tr>
+            <td>
+                পোস্ট: <strong>{{ report['title'] }}</strong> <br>
+                রিপোর্টার: {{ report['reporter_name'] }} | কারণ: {{ report['reason'] }}
+            </td>
+            <td>
+                <a href="/post/{{ report['post_id'] }}" target="_blank">দেখুন</a>
+                <a href="/admin_action_report/{{ report['id'] }}/delete_content" style="color: red;">🗑️ Delete Post</a>
+                <a href="/admin_action_report/{{ report['id'] }}/dismiss" style="color: gray;">Ignore</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h4>কমেন্ট রিপোর্ট</h4>
+    <table style="width: 100%;">
+        {% for report in comment_reports %}
+        <tr>
+            <td>
+                কমেন্ট: <i>"{{ report['comment_content'] }}"</i> <br>
+                রিপোর্টার: {{ report['reporter_name'] }} | কারণ: {{ report['reason'] }}
+            </td>
+            <td>
+                <a href="/admin_action_report/{{ report['id'] }}/delete_content" style="color: red;">🗑️ Delete Comment</a>
+                <a href="/admin_action_report/{{ report['id'] }}/dismiss" style="color: gray;">Ignore</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

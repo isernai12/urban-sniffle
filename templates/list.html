@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="section-header">
+        <span class="section-title">{{ title }}</span>
+    </div>
+
+    {% for post in posts %}
+        <div class="post">
+            <span class="tag">{{ post['category'] }}</span>
+            <h2>{{ post['title'] }}</h2>
+            <p>{{ post['intro'] }}</p>
+            {% if post['thumbnail'] %}
+                <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" style="max-height: 150px; margin-top: 10px;">
+            {% endif %}
+            <br><br>
+            <a href="{{ url_for('post_detail', post_id=post['id']) }}" class="sub-btn" style="display: inline-block; width: auto; padding: 8px 15px; text-decoration: none;">বিস্তারিত পড়ুন</a>
+        </div>
+    {% else %}
+        <p style="text-align: center; color: #666;">কোনো পোস্ট পাওয়া যায়নি।</p>
+    {% endfor %}
+{% endblock %}

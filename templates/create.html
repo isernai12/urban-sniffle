@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="post">
+        <h1>নতুন পোস্ট তৈরি করুন</h1>
+        <form method="post" enctype="multipart/form-data">
+
+            <label>শিরোনাম</label>
+            <input type="text" name="title" placeholder="টাইটেল লিখুন" required>
+
+            <label>ক্যাটাগরি</label>
+            <input type="text" name="category" placeholder="যেমন: Python, Web" list="cat-list" required>
+            <datalist id="cat-list">
+                <option value="Python"><option value="Web"><option value="Life">
+            </datalist>
+
+            <label>ইন্ট্রোডাকশন</label>
+            <input type="text" name="intro" placeholder="ছোট বিবরণ..." required>
+
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <label>নরমাল থাম্বনেইল</label>
+                <input type="file" name="thumbnail" accept="image/*" required>
+                <label>ট্রেন্ডিং থাম্বনেইল (বড়)</label>
+                <input type="file" name="trending_thumbnail" accept="image/*">
+            </div>
+
+            <label>বিস্তারিত</label>
+            <textarea name="content" rows="10" required></textarea>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" name="action" value="draft" class="sub-btn" style="background: #64748b;">খসড়া (Draft) রাখুন</button>
+                <button type="submit" name="action" value="submit" class="sub-btn" style="background: #10b981;">এডমিনের কাছে পাঠান</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

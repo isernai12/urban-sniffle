@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="post">
+        <h1>পোস্ট এডিট করুন</h1>
+        <form method="post" enctype="multipart/form-data">
+            
+            <label>শিরোনাম</label>
+            <input type="text" name="title" value="{{ post['title'] }}" required>
+
+            <label>ক্যাটাগরি</label>
+            <input type="text" name="category" value="{{ post['category'] }}" list="cat-list" required>
+            <datalist id="cat-list">
+                <option value="Python">
+                <option value="Web Development">
+                <option value="Tech News">
+            </datalist>
+
+            <label>ইন্ট্রোডাকশন</label>
+            <input type="text" name="intro" value="{{ post['intro'] }}" required>
+            
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <h3 style="margin-top: 0; font-size: 1rem; color: #475569;">ছবি পরিবর্তন (ঐচ্ছিক)</h3>
+                
+                <div style="margin-bottom: 10px;">
+                    <label>বর্তমান নরমাল ছবি:</label>
+                    <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" style="height: 60px; display: block; margin-bottom: 5px;">
+                    <input type="file" name="thumbnail" accept="image/*">
+                </div>
+
+                <div>
+                    <label>বর্তমান ট্রেন্ডিং ছবি:</label>
+                    {% if post['trending_thumbnail'] %}
+                        <img src="{{ url_for('static', filename='uploads/' + post['trending_thumbnail']) }}" style="height: 60px; display: block; margin-bottom: 5px;">
+                    {% else %}
+                        <p style="font-size: 0.8em; color: #666;">(নেই)</p>
+                    {% endif %}
+                    <input type="file" name="trending_thumbnail" accept="image/*">
+                </div>
+            </div>
+
+            <label>বিস্তারিত (কন্টেন্টে [toc:..] ব্যবহার করলে নতুন করে TOC তৈরি হবে)</label>
+            <textarea name="content" rows="15" required>{{ post['content'] }}</textarea>
+            
+            <button type="submit" class="sub-btn" style="background: #f59e0b;">আপডেট করুন</button>
+        </form>
+    </div>
+{% endblock %}

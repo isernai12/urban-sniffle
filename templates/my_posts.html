@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="post">
+    <h1>আমার পোস্ট সমূহ</h1>
+    <a href="/create" class="sub-btn" style="text-decoration: none; display: inline-block; width: auto; margin-bottom: 20px;">➕ নতুন পোস্ট লিখুন</a>
+
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background: #f1f5f9;">
+                <th style="padding: 10px; text-align: left;">শিরোনাম</th>
+                <th style="padding: 10px;">স্ট্যাটাস</th>
+                <th style="padding: 10px;">অ্যাকশন</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for post in posts %}
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 10px;">
+                    <strong>{{ post['title'] }}</strong>
+                </td>
+                <td style="padding: 10px; text-align: center;">
+                    {% if post['status'] == 'approved' %}
+                        <span style="color: green; font-weight: bold;">প্রকাশিত</span>
+                    {% elif post['status'] == 'pending' %}
+                        <span style="color: orange; font-weight: bold;">রিভিউ চলছে</span>
+                    {% elif post['status'] == 'rejected' %}
+                        <span style="color: red; font-weight: bold;">বাতিল</span>
+                    {% else %}
+                        <span style="color: gray; font-weight: bold;">খসড়া (Draft)</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 10px; text-align: center;">
+                    <a href="/edit_post/{{ post['id'] }}" style="text-decoration: none;">✏️</a>
+                    <a href="/delete_user_post/{{ post['id'] }}" onclick="return confirm('মুছে ফেলতে চান?')" style="text-decoration: none; color: red;">🗑️</a>
+                    
+                    {% if post['status'] == 'approved' %}
+                        <a href="/toggle_active_user/{{ post['id'] }}" style="text-decoration: none; margin-left: 5px;">
+                            {% if post['is_active'] %} 🟢 {% else %} ⚫ {% endif %}
+                        </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+                <tr><td colspan="3" style="text-align: center; padding: 20px;">আপনার কোনো পোস্ট নেই।</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
