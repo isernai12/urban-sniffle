@@ -52,6 +52,8 @@ def init_db():
             categories TEXT,
             social_links TEXT,
             facebook_link TEXT,
+            x_link TEXT,
+            instagram_link TEXT,
             website_link TEXT,
             youtube_link TEXT,
             profile_pic TEXT,
@@ -123,6 +125,8 @@ def ensure_user_columns(conn):
         'categories': 'TEXT',
         'social_links': 'TEXT',
         'facebook_link': 'TEXT',
+        'x_link': 'TEXT',
+        'instagram_link': 'TEXT',
         'website_link': 'TEXT',
         'youtube_link': 'TEXT',
         'profile_pic': 'TEXT',
@@ -281,10 +285,19 @@ def inject_global_data():
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
+        email = request.form['email'].strip().lower()
         name = request.form.get('name') or None
         password = request.form['password']
+        confirm_password = request.form.get('confirm_password')
+        terms = request.form.get('terms')
+
+        if not terms:
+            flash('Terms & Privacy গ্রহণ করতে হবে।')
+            return redirect(url_for('signup'))
+        if confirm_password is not None and password != confirm_password:
+            flash('কনফার্ম পাসওয়ার্ড মিলছে না।')
+            return redirect(url_for('signup'))
+
         hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
         conn = get_db_connection()
         try:
@@ -292,13 +305,20 @@ def signup():
             user_count = conn.execute('SELECT COUNT(*) FROM users').fetchone()[0]
             is_admin = 1 if user_count == 0 else 0
 
-            conn.execute('INSERT INTO users (username, password, is_admin, name, email) VALUES (?, ?, ?, ?, ?)', 
-                         (username, hashed_pw, is_admin, name, email))
+            existing = conn.execute('SELECT 1 FROM users WHERE email = ?', (email,)).fetchone()
+            if existing:
+                flash('এই ইমেইলটি ইতিমধ্যে ব্যবহৃত হয়েছে।')
+                return redirect(url_for('signup'))
+
+            conn.execute(
+                'INSERT INTO users (username, password, is_admin, name, email) VALUES (?, ?, ?, ?, ?)',
+                (email, hashed_pw, is_admin, name, email)
+            )
             conn.commit()
             flash('অ্যাকাউন্ট তৈরি সফল! এখন লগইন করুন।')
             return redirect(url_for('login'))
         except sqlite3.IntegrityError:
-            flash('এই ইউজারনেমটি ইতিমধ্যে ব্যবহৃত হয়েছে।')
+            flash('এই ইমেইলটি ইতিমধ্যে ব্যবহৃত হয়েছে।')
         finally:
             conn.close()
     return render_template('signup.html')
@@ -306,17 +326,17 @@ def signup():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        identifier = request.form['identifier']
+        email = request.form['email'].strip().lower()
         password = request.form['password']
         conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE username = ? OR email = ?', (identifier, identifier)).fetchone()
+        user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
         conn.close()
 
         if user and check_password_hash(user['password'], password):
             login_user(User(user['id'], user['username'], user['is_admin'], user['name'], user['email'], user['profile_pic']))
             return redirect(url_for('index'))
         else:
-            flash('ভুল ইমেইল/ইউজারনেম বা পাসওয়ার্ড।')
+            flash('ভুল ইমেইল বা পাসওয়ার্ড।')
     return render_template('login.html')
 
 @app.errorhandler(500)
@@ -640,7 +660,7 @@ def delete_user_post(post_id):
         conn.execute('DELETE FROM posts WHERE id = ?', (post_id,))
         conn.execute('DELETE FROM reports WHERE post_id = ?', (post_id,)) # রিপোর্টও ডিলিট
         conn.commit()
-        flash('পোস্ট ডিলিট করা হয়েছে।')
+        flash('পোস্ট ডিলিট করা হয়েছে।', 'delete')
     conn.close()
     return redirect(url_for('my_posts'))
 
@@ -798,7 +818,7 @@ def admin_action_post(post_id, action):
     elif action == 'delete':
         conn.execute("DELETE FROM posts WHERE id = ?", (post_id,))
         conn.execute("DELETE FROM reports WHERE post_id = ?", (post_id,))
-        flash('পোস্ট পার্মানেন্টলি ডিলিট করা হয়েছে।')
+        flash('পোস্ট পার্মানেন্টলি ডিলিট করা হয়েছে।', 'delete')
 
     conn.commit()
     conn.close()
@@ -817,10 +837,10 @@ def admin_action_report(report_id, action):
         report = conn.execute("SELECT * FROM reports WHERE id = ?", (report_id,)).fetchone()
         if report['post_id']:
             conn.execute("DELETE FROM posts WHERE id = ?", (report['post_id'],))
-            flash('রিপোর্ট করা পোস্ট ডিলিট করা হয়েছে।')
+            flash('রিপোর্ট করা পোস্ট ডিলিট করা হয়েছে।', 'delete')
         elif report['comment_id']:
             conn.execute("DELETE FROM comments WHERE id = ?", (report['comment_id'],))
-            flash('রিপোর্ট করা কমেন্ট ডিলিট করা হয়েছে।')
+            flash('রিপোর্ট করা কমেন্ট ডিলিট করা হয়েছে।', 'delete')
         conn.execute("DELETE FROM reports WHERE id = ?", (report_id,))
 
     conn.commit()
@@ -948,6 +968,8 @@ def manage_profile():
         selected_hobbies = request.form.getlist('hobby')
         selected_categories = request.form.getlist('categories')
         facebook_link = request.form.get('facebook_link') or None
+        x_link = request.form.get('x_link') or None
+        instagram_link = request.form.get('instagram_link') or None
         website_link = request.form.get('website_link') or None
         youtube_link = request.form.get('youtube_link') or None
         profile_pic = user['profile_pic']
@@ -984,7 +1006,7 @@ def manage_profile():
 
         conn.execute('''
             UPDATE users
-            SET name = ?, email = ?, bio = ?, hobby = ?, categories = ?, facebook_link = ?, website_link = ?, youtube_link = ?, profile_pic = ?
+            SET name = ?, email = ?, bio = ?, hobby = ?, categories = ?, facebook_link = ?, x_link = ?, instagram_link = ?, website_link = ?, youtube_link = ?, profile_pic = ?
             WHERE id = ?
         ''', (
             name,
@@ -993,6 +1015,8 @@ def manage_profile():
             json.dumps(selected_hobbies),
             json.dumps(selected_categories),
             facebook_link,
+            x_link,
+            instagram_link,
             website_link,
             youtube_link,
             profile_pic,
