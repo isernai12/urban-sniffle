@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="post">
+    <h1>প্রোফাইল ম্যানেজমেন্ট</h1>
+    <form method="post" enctype="multipart/form-data">
+        <label>পূর্ণ নাম</label>
+        <input type="text" name="name" value="{{ user['name'] or '' }}" placeholder="আপনার নাম">
+
+        <label>ইমেইল</label>
+        <input type="email" name="email" value="{{ user['email'] or '' }}" required>
+
+        <label>প্রোফাইল ছবি</label>
+        <input type="file" name="profile_pic" accept="image/*">
+        {% if user['profile_pic'] %}
+            <img src="{{ url_for('static', filename='profile_uploads/' + user['profile_pic']) }}" alt="profile" style="max-width: 120px; margin-top: 10px;">
+        {% endif %}
+
+        <label>বায়ো</label>
+        <textarea name="bio" rows="3" placeholder="আপনার সম্পর্কে লিখুন">{{ user['bio'] or '' }}</textarea>
+
+        <label>হবি</label>
+        <input type="text" name="hobby" value="{{ user['hobby'] or '' }}" placeholder="আপনার শখ">
+
+        <label>আপনি যে ক্যাটাগরি নিয়ে কাজ করেন</label>
+        <input type="text" name="categories" value="{{ user['categories'] or '' }}" placeholder="যেমন: পাইথন, ডেটা, ওয়েব">
+
+        <label>সোশ্যাল লিঙ্ক</label>
+        <input type="text" name="social_links" value="{{ user['social_links'] or '' }}" placeholder="আপনার ফেসবুক/লিংকডইন/ওয়েবসাইট">
+
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+
+        <h3>পাসওয়ার্ড আপডেট</h3>
+        <label>বর্তমান পাসওয়ার্ড</label>
+        <input type="password" name="current_password" placeholder="বর্তমান পাসওয়ার্ড">
+
+        <label>নতুন পাসওয়ার্ড</label>
+        <input type="password" name="new_password" placeholder="নতুন পাসওয়ার্ড">
+
+        <label>নতুন পাসওয়ার্ড নিশ্চিত করুন</label>
+        <input type="password" name="confirm_password" placeholder="নতুন পাসওয়ার্ড আবার লিখুন">
+
+        <button type="submit" class="sub-btn" style="margin-top: 10px;">সেভ করুন</button>
+    </form>
+</div>
+{% endblock %}

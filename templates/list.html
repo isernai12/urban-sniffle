@@ -10,6 +10,19 @@
             <span class="tag">{{ post['category'] }}</span>
             <h2>{{ post['title'] }}</h2>
             <p>{{ post['intro'] }}</p>
+            <div class="author-row">
+                <div class="author-avatar">
+                    {% if post['author_profile_pic'] %}
+                        <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="profile">
+                    {% else %}
+                        {{ post['author_display_name'][:1] }}
+                    {% endif %}
+                </div>
+                <div>
+                    <div class="author-name">{{ post['author_display_name'] }}</div>
+                    <div class="author-meta">⏱️ {{ post['read_time'] }} পড়া</div>
+                </div>
+            </div>
             {% if post['thumbnail'] %}
                 <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" style="max-height: 150px; margin-top: 10px;">
             {% endif %}

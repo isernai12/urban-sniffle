@@ -49,6 +49,19 @@
         <span class="tag">{{ post['category'] }}</span>
         <h1 style="margin-top: 10px;">{{ post['title'] }}</h1>
         <p style="color: #64748b;">{{ post['intro'] }}</p>
+        <div class="author-row">
+            <div class="author-avatar">
+                {% if post['author_profile_pic'] %}
+                    <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="profile">
+                {% else %}
+                    {{ post['author_display_name'][:1] }}
+                {% endif %}
+            </div>
+            <div>
+                <div class="author-name">{{ post['author_display_name'] }}</div>
+                <div class="author-meta">⏱️ {{ post['read_time'] }} পড়া</div>
+            </div>
+        </div>
         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
 
         {% if post['thumbnail'] %}
@@ -146,6 +159,16 @@
             {% for rel_post in related_posts %}
                 <div class="post" style="margin-bottom: 0; cursor: pointer;" onclick="window.location.href='{{ url_for('post_detail', post_id=rel_post['id']) }}'">
                     <h3 style="font-size: 1rem; margin: 0;">{{ rel_post['title'] }}</h3>
+                    <div class="author-row" style="margin-top: 6px;">
+                        <div class="author-avatar" style="width: 28px; height: 28px; font-size: 0.75rem;">
+                            {% if rel_post['author_profile_pic'] %}
+                                <img src="{{ url_for('static', filename='profile_uploads/' + rel_post['author_profile_pic']) }}" alt="profile">
+                            {% else %}
+                                {{ rel_post['author_display_name'][:1] }}
+                            {% endif %}
+                        </div>
+                        <div class="author-name" style="font-size: 0.85rem;">{{ rel_post['author_display_name'] }}</div>
+                    </div>
                 </div>
             {% endfor %}
         </div>
