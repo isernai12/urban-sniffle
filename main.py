@@ -17,7 +17,7 @@ app.secret_key = 'super_secret_key_change_this_in_production'
 APP_START_TIME = time.time()
 
 # আপনার ডাটাবেস ক্রেডেনশিয়াল
-DATABASE_URL = "libsql://wroto-nekoadmin.aws-ap-south-1.turso.io"
+DATABASE_URL = "https://wroto-nekoadmin.aws-ap-south-1.turso.io"
 DATABASE_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NjgzOTQ5MjIsImlkIjoiZjgzYzlhN2QtNTJmOC00NDBlLWE4ZGMtMDljN2ViZjNlNWUwIiwicmlkIjoiYzlhYjJlODYtNTMxZi00NDc4LWEwYTctMGRjMWJiNGI3ZjBlIn0.AKM9fPVGHzO_nhXYiqlnOoDgxbWatz4O3qGI2-Bg55XV2MrgK_30rEZCBA0XksZw9lQ3XLrP7avp9j00ihdvBA"
 
 # কনফিগারেশন
