@@ -4,7 +4,8 @@ import json
 import math
 import sqlite3
 import time
-from flask import Flask, render_template, request, redirect, url_for, flash, abort
+from datetime import datetime
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, jsonify
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -51,6 +52,8 @@ def init_db():
             categories TEXT,
             social_links TEXT,
             facebook_link TEXT,
+            x_link TEXT,
+            instagram_link TEXT,
             website_link TEXT,
             youtube_link TEXT,
             profile_pic TEXT,
@@ -122,6 +125,8 @@ def ensure_user_columns(conn):
         'categories': 'TEXT',
         'social_links': 'TEXT',
         'facebook_link': 'TEXT',
+        'x_link': 'TEXT',
+        'instagram_link': 'TEXT',
         'website_link': 'TEXT',
         'youtube_link': 'TEXT',
         'profile_pic': 'TEXT',
@@ -216,9 +221,28 @@ def build_post_payload(rows):
         post['author_display_name'] = author_name
         post['author_profile_pic'] = row['author_profile_pic']
         post['read_time'] = calculate_read_time(post.get('content', ''))
+        post = format_post_meta(post)
         post['slug'] = post.get('slug') or slugify_text(post.get('title'))
         posts.append(post)
     return posts
+
+def format_post_meta(post):
+    minutes = calculate_read_time_minutes(post.get('content', ''))
+    post['read_time_en'] = f"{minutes} min"
+    created_at = post.get('created_at')
+    short_date = created_at
+    if created_at:
+        try:
+            parsed = datetime.fromisoformat(created_at)
+        except ValueError:
+            try:
+                parsed = datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                parsed = None
+        if parsed:
+            short_date = f"{parsed.strftime('%b')} {parsed.day}"
+    post['short_date'] = short_date
+    return post
 
 def build_writer_payload(rows):
     writers = []
@@ -227,6 +251,15 @@ def build_writer_payload(rows):
         writer['display_name'] = row['name'] or row['username']
         writers.append(writer)
     return writers
+
+def get_post_slug(conn, post_id):
+    row = conn.execute('SELECT slug, title FROM posts WHERE id = ?', (post_id,)).fetchone()
+    if not row:
+        return None
+    return row['slug'] or slugify_text(row['title'])
+
+def is_json_request():
+    return request.headers.get('X-Requested-With') == 'fetch' or request.accept_mimetypes['application/json']
 
 # গ্লোবাল ডাটা (বুকমার্ক) সব টেমপ্লেটে পাঠানোর জন্য
 @app.context_processor
@@ -252,10 +285,19 @@ def inject_global_data():
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
+        email = request.form['email'].strip().lower()
         name = request.form.get('name') or None
         password = request.form['password']
+        confirm_password = request.form.get('confirm_password')
+        terms = request.form.get('terms')
+
+        if not terms:
+            flash('Terms & Privacy গ্রহণ করতে হবে।')
+            return redirect(url_for('signup'))
+        if confirm_password is not None and password != confirm_password:
+            flash('কনফার্ম পাসওয়ার্ড মিলছে না।')
+            return redirect(url_for('signup'))
+
         hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
         conn = get_db_connection()
         try:
@@ -263,13 +305,20 @@ def signup():
             user_count = conn.execute('SELECT COUNT(*) FROM users').fetchone()[0]
             is_admin = 1 if user_count == 0 else 0
 
-            conn.execute('INSERT INTO users (username, password, is_admin, name, email) VALUES (?, ?, ?, ?, ?)', 
-                         (username, hashed_pw, is_admin, name, email))
+            existing = conn.execute('SELECT 1 FROM users WHERE email = ?', (email,)).fetchone()
+            if existing:
+                flash('এই ইমেইলটি ইতিমধ্যে ব্যবহৃত হয়েছে।')
+                return redirect(url_for('signup'))
+
+            conn.execute(
+                'INSERT INTO users (username, password, is_admin, name, email) VALUES (?, ?, ?, ?, ?)',
+                (email, hashed_pw, is_admin, name, email)
+            )
             conn.commit()
             flash('অ্যাকাউন্ট তৈরি সফল! এখন লগইন করুন।')
             return redirect(url_for('login'))
         except sqlite3.IntegrityError:
-            flash('এই ইউজারনেমটি ইতিমধ্যে ব্যবহৃত হয়েছে।')
+            flash('এই ইমেইলটি ইতিমধ্যে ব্যবহৃত হয়েছে।')
         finally:
             conn.close()
     return render_template('signup.html')
@@ -277,17 +326,17 @@ def signup():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        identifier = request.form['identifier']
+        email = request.form['email'].strip().lower()
         password = request.form['password']
         conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE username = ? OR email = ?', (identifier, identifier)).fetchone()
+        user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
         conn.close()
 
         if user and check_password_hash(user['password'], password):
             login_user(User(user['id'], user['username'], user['is_admin'], user['name'], user['email'], user['profile_pic']))
             return redirect(url_for('index'))
         else:
-            flash('ভুল ইমেইল/ইউজারনেম বা পাসওয়ার্ড।')
+            flash('ভুল ইমেইল বা পাসওয়ার্ড।')
     return render_template('login.html')
 
 @app.errorhandler(500)
@@ -386,11 +435,11 @@ def post_list():
     filter_type = request.args.get('type')
     cat_name = request.args.get('category')
     conn = get_db_connection()
-    page_title = "সকল পোস্ট"
+    page_title = "All Posts"
     posts = []
 
     if filter_type == 'latest':
-        page_title = "সর্বশেষ সকল পোস্ট"
+        page_title = "Latest Posts"
         posts = conn.execute("""
             SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
             FROM posts
@@ -399,7 +448,7 @@ def post_list():
             ORDER BY posts.id DESC
         """).fetchall()
     elif filter_type == 'category' and cat_name:
-        page_title = f"ক্যাটাগরি: {cat_name}"
+        page_title = f"Category: {cat_name}"
         posts = conn.execute("""
             SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
             FROM posts
@@ -494,8 +543,32 @@ def my_posts():
 
     conn = get_db_connection()
     posts = conn.execute('SELECT * FROM posts WHERE user_id = ? ORDER BY id DESC', (current_user.id,)).fetchall()
+    total_posts = conn.execute('SELECT COUNT(*) FROM posts WHERE user_id = ?', (current_user.id,)).fetchone()[0]
+    total_views = conn.execute('SELECT COALESCE(SUM(views), 0) FROM posts WHERE user_id = ?', (current_user.id,)).fetchone()[0]
+    total_likes = conn.execute('''
+        SELECT COUNT(*) FROM post_likes
+        JOIN posts ON post_likes.post_id = posts.id
+        WHERE posts.user_id = ?
+    ''', (current_user.id,)).fetchone()[0]
+    total_comments = conn.execute('''
+        SELECT COUNT(*) FROM comments
+        JOIN posts ON comments.post_id = posts.id
+        WHERE posts.user_id = ?
+    ''', (current_user.id,)).fetchone()[0]
+    posts_last_30 = conn.execute(
+        "SELECT COUNT(*) FROM posts WHERE user_id = ? AND created_at >= datetime('now', '-30 days')",
+        (current_user.id,)
+    ).fetchone()[0]
     conn.close()
-    return render_template('my_posts.html', posts=posts)
+    return render_template(
+        'my_posts.html',
+        posts=posts,
+        total_posts=total_posts,
+        total_views=total_views,
+        total_likes=total_likes,
+        total_comments=total_comments,
+        posts_last_30=posts_last_30
+    )
 
 @app.route('/create', methods=('GET', 'POST'))
 @login_required
@@ -611,7 +684,7 @@ def delete_user_post(post_id):
         conn.execute('DELETE FROM posts WHERE id = ?', (post_id,))
         conn.execute('DELETE FROM reports WHERE post_id = ?', (post_id,)) # রিপোর্টও ডিলিট
         conn.commit()
-        flash('পোস্ট ডিলিট করা হয়েছে।')
+        flash('পোস্ট ডিলিট করা হয়েছে।', 'delete')
     conn.close()
     return redirect(url_for('my_posts'))
 
@@ -638,12 +711,16 @@ def admin_dashboard():
     pending_count = conn.execute("SELECT COUNT(*) FROM posts WHERE status = 'pending'").fetchone()[0]
     post_report_count = conn.execute("SELECT COUNT(*) FROM reports WHERE post_id IS NOT NULL").fetchone()[0]
     comment_report_count = conn.execute("SELECT COUNT(*) FROM reports WHERE comment_id IS NOT NULL").fetchone()[0]
+    total_posts = conn.execute("SELECT COUNT(*) FROM posts").fetchone()[0]
+    total_users = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
 
     conn.close()
     return render_template('admin_dashboard.html',
                            pending_count=pending_count,
                            post_report_count=post_report_count,
-                           comment_report_count=comment_report_count)
+                           comment_report_count=comment_report_count,
+                           total_posts=total_posts,
+                           total_users=total_users)
 
 @app.route('/admin/status')
 @login_required
@@ -709,7 +786,8 @@ def admin_reports():
         return "Access Denied", 403
     conn = get_db_connection()
     post_reports = conn.execute('''
-        SELECT reports.*, posts.title, posts.slug as post_slug, users.username as reporter_name
+        SELECT reports.*, posts.title, posts.slug as post_slug, posts.thumbnail,
+               users.username as reporter_name
         FROM reports
         JOIN posts ON reports.post_id = posts.id
         JOIN users ON reports.reporter_id = users.id
@@ -722,15 +800,68 @@ def admin_reports():
     ]
 
     comment_reports = conn.execute('''
-        SELECT reports.*, comments.content as comment_content, users.username as reporter_name
+        SELECT reports.*, comments.content as comment_content, posts.title as post_title,
+               posts.slug as post_slug, posts.id as post_id, users.username as reporter_name
         FROM reports
         JOIN comments ON reports.comment_id = comments.id
+        JOIN posts ON comments.post_id = posts.id
         JOIN users ON reports.reporter_id = users.id
         WHERE reports.comment_id IS NOT NULL
         ORDER BY reports.created_at DESC
     ''').fetchall()
+    comment_reports = [
+        dict(row, post_slug=row['post_slug'] or slugify_text(row['post_title']))
+        for row in comment_reports
+    ]
     conn.close()
     return render_template('admin_reports.html', post_reports=post_reports, comment_reports=comment_reports)
+
+@app.route('/manage_posts')
+@login_required
+def manage_posts():
+    if not current_user.is_admin:
+        return "Access Denied", 403
+
+    search_query = request.args.get('q', '').strip()
+    try:
+        page = int(request.args.get('page', 1))
+    except ValueError:
+        page = 1
+    page = max(1, page)
+    per_page = 10
+    offset = (page - 1) * per_page
+
+    conn = get_db_connection()
+    query_filters = ""
+    params = []
+    if search_query:
+        query_filters = "WHERE title LIKE ?"
+        params.append(f"%{search_query}%")
+
+    total_posts = conn.execute(
+        f"SELECT COUNT(*) FROM posts {query_filters}",
+        params
+    ).fetchone()[0]
+
+    posts = conn.execute(
+        f"SELECT * FROM posts {query_filters} ORDER BY id DESC LIMIT ? OFFSET ?",
+        params + [per_page, offset]
+    ).fetchall()
+    conn.close()
+
+    posts = [
+        dict(row, slug=row['slug'] or slugify_text(row['title']))
+        for row in posts
+    ]
+    total_pages = max(1, math.ceil(total_posts / per_page))
+
+    return render_template(
+        'manage.html',
+        posts=posts,
+        page=page,
+        total_pages=total_pages,
+        search_query=search_query
+    )
 
 @app.route('/preview/<int:post_id>')
 @login_required
@@ -769,7 +900,7 @@ def admin_action_post(post_id, action):
     elif action == 'delete':
         conn.execute("DELETE FROM posts WHERE id = ?", (post_id,))
         conn.execute("DELETE FROM reports WHERE post_id = ?", (post_id,))
-        flash('পোস্ট পার্মানেন্টলি ডিলিট করা হয়েছে।')
+        flash('পোস্ট পার্মানেন্টলি ডিলিট করা হয়েছে।', 'delete')
 
     conn.commit()
     conn.close()
@@ -788,15 +919,46 @@ def admin_action_report(report_id, action):
         report = conn.execute("SELECT * FROM reports WHERE id = ?", (report_id,)).fetchone()
         if report['post_id']:
             conn.execute("DELETE FROM posts WHERE id = ?", (report['post_id'],))
-            flash('রিপোর্ট করা পোস্ট ডিলিট করা হয়েছে।')
+            flash('রিপোর্ট করা পোস্ট ডিলিট করা হয়েছে।', 'delete')
         elif report['comment_id']:
             conn.execute("DELETE FROM comments WHERE id = ?", (report['comment_id'],))
-            flash('রিপোর্ট করা কমেন্ট ডিলিট করা হয়েছে।')
+            flash('রিপোর্ট করা কমেন্ট ডিলিট করা হয়েছে।', 'delete')
         conn.execute("DELETE FROM reports WHERE id = ?", (report_id,))
 
     conn.commit()
     conn.close()
     return redirect(url_for('admin_dashboard'))
+
+@app.route('/toggle_status/<int:post_id>')
+@login_required
+def toggle_status(post_id):
+    if not current_user.is_admin:
+        return "Access Denied", 403
+    conn = get_db_connection()
+    conn.execute("UPDATE posts SET is_active = NOT is_active WHERE id = ?", (post_id,))
+    conn.commit()
+    conn.close()
+    flash('পোস্ট স্ট্যাটাস আপডেট করা হয়েছে।')
+    return redirect(request.referrer or url_for('manage_posts'))
+
+@app.route('/delete_post/<int:post_id>')
+@login_required
+def delete_post(post_id):
+    if not current_user.is_admin:
+        return "Access Denied", 403
+    conn = get_db_connection()
+    conn.execute("DELETE FROM post_likes WHERE post_id = ?", (post_id,))
+    conn.execute("DELETE FROM bookmarks WHERE post_id = ?", (post_id,))
+    comments = conn.execute("SELECT id FROM comments WHERE post_id = ?", (post_id,)).fetchall()
+    for comment in comments:
+        conn.execute("DELETE FROM comment_likes WHERE comment_id = ?", (comment['id'],))
+    conn.execute("DELETE FROM comments WHERE post_id = ?", (post_id,))
+    conn.execute("DELETE FROM reports WHERE post_id = ?", (post_id,))
+    conn.execute("DELETE FROM posts WHERE id = ?", (post_id,))
+    conn.commit()
+    conn.close()
+    flash('পোস্ট ডিলিট করা হয়েছে।', 'delete')
+    return redirect(request.referrer or url_for('manage_posts'))
 
 # --- রিপোর্ট সাবমিশন (ইউজার সাইড) ---
 @app.route('/report_content', methods=['POST'])
@@ -812,8 +974,11 @@ def report_content():
                      (current_user.id, post_id, comment_id, reason))
         conn.commit()
         conn.close()
-        flash('আপনার রিপোর্ট এডমিনের কাছে পাঠানো হয়েছে।')
+        if not is_json_request():
+            flash('আপনার রিপোর্ট এডমিনের কাছে পাঠানো হয়েছে।')
 
+    if is_json_request():
+        return jsonify({"success": True})
     return redirect(request.referrer or url_for('index'))
 
 # --- ডিটেইলস পেজ ---
@@ -844,6 +1009,7 @@ def post_detail(post_id, slug):
     post['author_display_name'] = post['author_name'] or post['username']
     post['read_time'] = calculate_read_time(post.get('content', ''))
     post['slug'] = post.get('slug') or slugify_text(post.get('title'))
+    post = format_post_meta(post)
 
     # অ্যাক্সেস লজিক:
     is_author = current_user.is_authenticated and post['user_id'] == current_user.id
@@ -887,7 +1053,18 @@ def post_detail(post_id, slug):
     toc_items = json.loads(post['toc_data']) if post['toc_data'] else []
 
     conn.close()
-    return render_template('detail.html', post=post, content=post['content'], toc_items=toc_items, related_posts=related_posts, comments=comments_data, post_like_count=post_like_count, user_liked_post=user_liked_post, liked_comments=liked_comments, is_bookmarked=is_bookmarked)
+    return render_template(
+        'detail.html',
+        post=post,
+        content=post['content'],
+        toc_items=toc_items,
+        related_posts=related_posts,
+        comments=comments_data,
+        post_like_count=post_like_count,
+        user_liked_post=user_liked_post,
+        liked_comments=liked_comments,
+        is_bookmarked=is_bookmarked
+    )
 
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
@@ -904,6 +1081,8 @@ def manage_profile():
         selected_hobbies = request.form.getlist('hobby')
         selected_categories = request.form.getlist('categories')
         facebook_link = request.form.get('facebook_link') or None
+        x_link = request.form.get('x_link') or None
+        instagram_link = request.form.get('instagram_link') or None
         website_link = request.form.get('website_link') or None
         youtube_link = request.form.get('youtube_link') or None
         profile_pic = user['profile_pic']
@@ -940,7 +1119,7 @@ def manage_profile():
 
         conn.execute('''
             UPDATE users
-            SET name = ?, email = ?, bio = ?, hobby = ?, categories = ?, facebook_link = ?, website_link = ?, youtube_link = ?, profile_pic = ?
+            SET name = ?, email = ?, bio = ?, hobby = ?, categories = ?, facebook_link = ?, x_link = ?, instagram_link = ?, website_link = ?, youtube_link = ?, profile_pic = ?
             WHERE id = ?
         ''', (
             name,
@@ -949,6 +1128,8 @@ def manage_profile():
             json.dumps(selected_hobbies),
             json.dumps(selected_categories),
             facebook_link,
+            x_link,
+            instagram_link,
             website_link,
             youtube_link,
             profile_pic,
@@ -970,7 +1151,7 @@ def manage_profile():
     )
 
 # --- ইন্টারঅ্যাকশন রাউটস (লাইক, কমেন্ট, বুকমার্ক) ---
-@app.route('/like_post/<int:post_id>')
+@app.route('/like_post/<int:post_id>', methods=['GET', 'POST'])
 @login_required
 def like_post(post_id):
     conn = get_db_connection()
@@ -978,21 +1159,50 @@ def like_post(post_id):
     if existing: conn.execute('DELETE FROM post_likes WHERE user_id = ? AND post_id = ?', (current_user.id, post_id))
     else: conn.execute('INSERT INTO post_likes (user_id, post_id) VALUES (?, ?)', (current_user.id, post_id))
     conn.commit()
+    count = conn.execute('SELECT COUNT(*) FROM post_likes WHERE post_id = ?', (post_id,)).fetchone()[0]
+    slug = get_post_slug(conn, post_id)
     conn.close()
-    return redirect(url_for('post_detail', post_id=post_id))
+    if is_json_request():
+        return jsonify({"liked": not existing, "count": count})
+    if not slug:
+        return redirect(url_for('index'))
+    return redirect(url_for('post_detail', post_id=post_id, slug=slug))
 
 @app.route('/add_comment/<int:post_id>', methods=['POST'])
 @login_required
 def add_comment(post_id):
-    content = request.form['content']
+    content = request.form.get('content') or (request.json or {}).get('content')
+    conn = get_db_connection()
+    slug = get_post_slug(conn, post_id)
     if content:
-        conn = get_db_connection()
-        conn.execute('INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)', (post_id, current_user.id, content))
+        cursor = conn.execute(
+            'INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)',
+            (post_id, current_user.id, content)
+        )
         conn.commit()
+        comment_id = cursor.lastrowid
+        comment = conn.execute(
+            'SELECT comments.id, comments.content, comments.created_at, users.username '
+            'FROM comments JOIN users ON comments.user_id = users.id WHERE comments.id = ?',
+            (comment_id,)
+        ).fetchone()
         conn.close()
-    return redirect(url_for('post_detail', post_id=post_id))
+        if is_json_request():
+            return jsonify({
+                "id": comment['id'],
+                "content": comment['content'],
+                "created_at": comment['created_at'],
+                "username": comment['username']
+            })
+    else:
+        conn.close()
+    if is_json_request():
+        return jsonify({"error": "Missing content"}), 400
+    if not slug:
+        return redirect(url_for('index'))
+    return redirect(url_for('post_detail', post_id=post_id, slug=slug))
 
-@app.route('/like_comment/<int:comment_id>/<int:post_id>')
+@app.route('/like_comment/<int:comment_id>/<int:post_id>', methods=['GET', 'POST'])
 @login_required
 def like_comment(comment_id, post_id):
     conn = get_db_connection()
@@ -1000,22 +1210,29 @@ def like_comment(comment_id, post_id):
     if existing: conn.execute('DELETE FROM comment_likes WHERE user_id = ? AND comment_id = ?', (current_user.id, comment_id))
     else: conn.execute('INSERT INTO comment_likes (user_id, comment_id) VALUES (?, ?)', (current_user.id, comment_id))
     conn.commit()
+    count = conn.execute('SELECT COUNT(*) FROM comment_likes WHERE comment_id = ?', (comment_id,)).fetchone()[0]
+    slug = get_post_slug(conn, post_id)
     conn.close()
-    return redirect(url_for('post_detail', post_id=post_id))
+    if is_json_request():
+        return jsonify({"liked": not existing, "count": count, "comment_id": comment_id})
+    if not slug:
+        return redirect(url_for('index'))
+    return redirect(url_for('post_detail', post_id=post_id, slug=slug))
 
-@app.route('/toggle_bookmark/<int:post_id>')
+@app.route('/toggle_bookmark/<int:post_id>', methods=['GET', 'POST'])
 @login_required
 def toggle_bookmark(post_id):
     conn = get_db_connection()
     existing = conn.execute('SELECT * FROM bookmarks WHERE user_id = ? AND post_id = ?', (current_user.id, post_id)).fetchone()
     if existing:
         conn.execute('DELETE FROM bookmarks WHERE user_id = ? AND post_id = ?', (current_user.id, post_id))
-        flash('বুকমার্ক রিমুভ করা হয়েছে।')
     else:
         conn.execute('INSERT INTO bookmarks (user_id, post_id) VALUES (?, ?)', (current_user.id, post_id))
-        flash('বুকমার্ক যুক্ত করা হয়েছে!')
     conn.commit()
     conn.close()
+    if is_json_request():
+        return jsonify({"bookmarked": not existing})
+    flash('বুকমার্ক রিমুভ করা হয়েছে।' if existing else 'বুকমার্ক যুক্ত করা হয়েছে!')
     return redirect(request.referrer or url_for('index'))
 
 if __name__ == '__main__':
