@@ -687,7 +687,7 @@
         <div class="slides" id="slides">
           {% for post in trending_posts %}
             <img
-              src="{{ url_for('static', filename='uploads/' + (post['trending_thumbnail'] or post['thumbnail'])) }}"
+              src="{{ (post['trending_thumbnail'] or post['thumbnail']) | image_url }}"
               alt="{{ post['title'] }}"
               data-title="{{ post['title'] }}"
               data-link="{{ url_for('post_detail', post_id=post['id'], slug=post['slug']) }}"
@@ -733,7 +733,7 @@
         <article class="latestCard">
           <div class="thumb imgBox">
             {% if post['thumbnail'] %}
-              <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" alt="{{ post['title'] }}">
+              <img src="{{ post['thumbnail'] | image_url }}" alt="{{ post['title'] }}">
             {% else %}
               <img src="https://picsum.photos/900/520?random={{ loop.index }}" alt="{{ post['title'] }}">
             {% endif %}
@@ -751,7 +751,7 @@
               <div class="metaLeft">
                 <div class="avatar imgBox">
                   {% if post['author_profile_pic'] %}
-                    <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="{{ post['author_display_name'] }}">
+                    <img src="{{ post['author_profile_pic'] | image_url(folder='profile') }}" alt="{{ post['author_display_name'] }}">
                   {% else %}
                     <img src="https://ui-avatars.com/api/?name={{ post['author_display_name'] }}&background=f1f5f9&color=0f172a" alt="{{ post['author_display_name'] }}">
                   {% endif %}
@@ -789,7 +789,7 @@
               <a href="{{ url_for('post_detail', post_id=post['id'], slug=post['slug']) }}">
                 <div class="miniThumb imgBox">
                   {% if post['thumbnail'] %}
-                    <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" alt="{{ post['title'] }}">
+                    <img src="{{ post['thumbnail'] | image_url }}" alt="{{ post['title'] }}">
                   {% else %}
                     <img src="https://picsum.photos/800/450?random={{ loop.index }}" alt="{{ post['title'] }}">
                   {% endif %}
@@ -801,7 +801,7 @@
                     <div class="miniLeft">
                       <div class="miniAvatar imgBox">
                         {% if post['author_profile_pic'] %}
-                          <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="{{ post['author_display_name'] }}">
+                          <img src="{{ post['author_profile_pic'] | image_url(folder='profile') }}" alt="{{ post['author_display_name'] }}">
                         {% else %}
                           <img src="https://ui-avatars.com/api/?name={{ post['author_display_name'] }}&background=f1f5f9&color=0f172a" alt="{{ post['author_display_name'] }}">
                         {% endif %}
@@ -831,7 +831,7 @@
         {% for writer in top_writers %}
           <a class="writer imgBox" href="{{ url_for('public_profile', user_id=writer['id']) }}" title="{{ writer['display_name'] }}">
             {% if writer['profile_pic'] %}
-              <img src="{{ url_for('static', filename='profile_uploads/' + writer['profile_pic']) }}" alt="{{ writer['display_name'] }}">
+              <img src="{{ writer['profile_pic'] | image_url(folder='profile') }}" alt="{{ writer['display_name'] }}">
             {% else %}
               <img src="https://ui-avatars.com/api/?name={{ writer['display_name'] }}&background=f1f5f9&color=0f172a" alt="{{ writer['display_name'] }}">
             {% endif %}
