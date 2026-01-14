@@ -1,44 +1,507 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="post">
-    <h1>রিপোর্ট করা কনটেন্ট</h1>
+  <style>
+    .wrap{max-width:980px;margin:0 auto;padding:14px}
+    @media(max-width:1020px){ .wrap{max-width:520px} }
 
-    <h3 style="border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-top: 20px;">পোস্ট রিপোর্ট</h3>
-    <table style="width: 100%; margin-top: 10px;">
-        {% for report in post_reports %}
-        <tr>
-            <td>
-                পোস্ট: <strong>{{ report['title'] }}</strong> <br>
-                রিপোর্টার: {{ report['reporter_name'] }} | কারণ: {{ report['reason'] }}
-            </td>
-            <td>
-                <a href="{{ url_for('post_detail', post_id=report['post_id'], slug=report['post_slug']) }}" target="_blank">দেখুন</a>
-                <a href="/admin_action_report/{{ report['id'] }}/delete_content" style="color: red;">🗑️ Delete Post</a>
-                <a href="/admin_action_report/{{ report['id'] }}/dismiss" style="color: gray;">Ignore</a>
-            </td>
-        </tr>
-        {% else %}
-            <tr><td colspan="2">কোনো পোস্ট রিপোর্ট নেই।</td></tr>
-        {% endfor %}
-    </table>
+    .hero{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:18px;
+      box-shadow:0 6px 18px rgba(16,24,40,.04);
+      padding:14px;
+    }
+    .heroTop{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:flex-start;
+    }
+    .title{
+      font-size:14px;
+      font-weight:900;
+      letter-spacing:-0.2px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .sub{
+      margin-top:6px;
+      font-size:12px;
+      font-weight:300;
+      color:var(--muted);
+      line-height:1.55;
+    }
 
-    <h3 style="border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-top: 25px;">কমেন্ট রিপোর্ট</h3>
-    <table style="width: 100%; margin-top: 10px;">
-        {% for report in comment_reports %}
-        <tr>
-            <td>
-                কমেন্ট: <i>"{{ report['comment_content'] }}"</i> <br>
-                রিপোর্টার: {{ report['reporter_name'] }} | কারণ: {{ report['reason'] }}
-            </td>
-            <td>
-                <a href="/admin_action_report/{{ report['id'] }}/delete_content" style="color: red;">🗑️ Delete Comment</a>
-                <a href="/admin_action_report/{{ report['id'] }}/dismiss" style="color: gray;">Ignore</a>
-            </td>
-        </tr>
-        {% else %}
-            <tr><td colspan="2">কোনো কমেন্ট রিপোর্ট নেই।</td></tr>
-        {% endfor %}
-    </table>
-</div>
+    .chipRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+    .chip{
+      height:34px;
+      padding:0 12px;
+      border-radius:999px;
+      border:1px solid var(--softBorder);
+      background: rgba(255,255,255,0.35);
+      color:var(--text);
+      font-size:12px;
+      font-weight:900;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      user-select:none;
+      white-space:nowrap;
+    }
+    body[data-theme="dark"] .chip{background: rgba(255,255,255,0.06)}
+    .chip:active{transform:scale(.98)}
+
+    .chip.active{
+      background:#0f172a;
+      color:#fff;
+      border:1px solid rgba(15,23,42,0.30);
+    }
+    body[data-theme="dark"] .chip.active{
+      background: rgba(255,255,255,0.14);
+      border:1px solid rgba(255,255,255,0.16);
+      color: var(--text);
+    }
+
+    .filters{
+      margin-top:12px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .searchInput{
+      height:36px;
+      width:min(360px, 100%);
+      border-radius:999px;
+      border:1px solid var(--softBorder);
+      background: rgba(255,255,255,0.55);
+      padding:0 12px;
+      font-family:inherit;
+      font-size:12px;
+      color:var(--text);
+      outline:none;
+    }
+    body[data-theme="dark"] .searchInput{
+      background: rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.12);
+    }
+
+    .countPill{
+      height:36px;
+      padding:0 12px;
+      border-radius:999px;
+      border:1px solid var(--softBorder);
+      background: rgba(255,255,255,0.35);
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:12px;
+      font-weight:900;
+      color:var(--text);
+      white-space:nowrap;
+      user-select:none;
+    }
+    body[data-theme="dark"] .countPill{background: rgba(255,255,255,0.06)}
+    .countPill svg{width:16px;height:16px}
+
+    .grid{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap:12px;
+    }
+    @media(max-width:1020px){ .grid{grid-template-columns:1fr} }
+
+    .reportCard{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:18px;
+      overflow:hidden;
+      box-shadow:0 6px 18px rgba(16,24,40,.04);
+      min-width:0;
+    }
+    .thumb{
+      width:100%;
+      height:120px;
+      background: rgba(15,23,42,0.06);
+    }
+    body[data-theme="dark"] .thumb{background: rgba(255,255,255,0.06)}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+
+    .body{
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-width:0;
+    }
+    .rTitle{
+      font-size:13px;
+      font-weight:900;
+      letter-spacing:-0.2px;
+      line-height:1.35;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+    }
+    .oneLine{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      color:var(--muted);
+      font-size:11px;
+      font-weight:300;
+    }
+    .miniMeta{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+    .miniMeta svg{width:14px;height:14px;stroke-width:1.7}
+    .reason{
+      font-size:12px;
+      font-weight:300;
+      color:var(--muted);
+      line-height:1.55;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+    }
+
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .actBtn{
+      height:34px;
+      padding:0 12px;
+      border-radius:999px;
+      border:1px solid var(--softBorder);
+      background: rgba(255,255,255,0.35);
+      color:var(--text);
+      font-size:12px;
+      font-weight:900;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      user-select:none;
+      white-space:nowrap;
+      text-decoration:none;
+    }
+    body[data-theme="dark"] .actBtn{background: rgba(255,255,255,0.06)}
+    .actBtn:active{transform:scale(.98)}
+    .actBtn.primary{
+      background:#0f172a;color:#fff;border:1px solid rgba(15,23,42,0.30);
+    }
+    body[data-theme="dark"] .actBtn.primary{
+      background: rgba(255,255,255,0.14);
+      border:1px solid rgba(255,255,255,0.16);
+      color: var(--text);
+    }
+    .actBtn.danger{
+      background: rgba(239,68,68,0.12);
+      border:1px solid rgba(239,68,68,0.25);
+    }
+    body[data-theme="dark"] .actBtn.danger{
+      background: rgba(239,68,68,0.16);
+      border:1px solid rgba(239,68,68,0.26);
+    }
+
+    .commentCard{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:18px;
+      box-shadow:0 6px 18px rgba(16,24,40,.04);
+      overflow:hidden;
+      padding:12px;
+      min-width:0;
+      position:relative;
+    }
+
+    .commentCard::before{
+      content:"";
+      position:absolute;
+      left:0;top:0;bottom:0;
+      width:4px;
+      background: rgba(59,130,246,0.45);
+    }
+    body[data-theme="dark"] .commentCard::before{
+      background: rgba(99,102,241,0.55);
+    }
+
+    .commentTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+
+    .commentBadge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--softBorder);
+      background: rgba(59,130,246,0.10);
+      font-size:11px;
+      font-weight:900;
+      color:var(--text);
+      white-space:nowrap;
+    }
+    body[data-theme="dark"] .commentBadge{
+      background: rgba(99,102,241,0.14);
+      border:1px solid rgba(255,255,255,0.12);
+    }
+    .commentBadge svg{width:14px;height:14px}
+
+    .commentTitle{
+      font-size:13px;
+      font-weight:900;
+      letter-spacing:-0.2px;
+      line-height:1.35;
+      margin-top:8px;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+    }
+
+    .commentBubble{
+      margin-top:10px;
+      padding:10px 10px;
+      border-radius:14px;
+      border:1px solid var(--softBorder);
+      background: rgba(255,255,255,0.45);
+      font-size:12px;
+      font-weight:300;
+      color:var(--text);
+      line-height:1.6;
+    }
+    body[data-theme="dark"] .commentBubble{
+      background: rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.12);
+    }
+
+    .commentMetaRow{
+      margin-top:10px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      color:var(--muted);
+      font-size:11px;
+      font-weight:300;
+    }
+
+    .commentActions{
+      margin-top:10px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .emptyState{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:18px;
+      box-shadow:0 6px 18px rgba(16,24,40,.04);
+      padding:16px;
+      text-align:center;
+      color:var(--muted);
+      font-size:12px;
+    }
+  </style>
+
+  <main class="wrap">
+    <section class="hero">
+      <div class="heroTop">
+        <div style="min-width:0">
+          <div class="title"><span data-lucide="shield-alert"></span> Reports</div>
+          <div class="sub">Post report এবং Comment report দুইটি ট্যাবে দেখা যাবে।</div>
+        </div>
+
+        <div class="chipRow">
+          <button class="chip active" id="tabPosts" type="button">
+            <span data-lucide="file-text"></span> Post Reports
+          </button>
+          <button class="chip" id="tabComments" type="button">
+            <span data-lucide="message-square-warning"></span> Comment Reports
+          </button>
+
+          <button class="chip" id="btnRefresh" type="button">
+            <span data-lucide="refresh-ccw"></span> Refresh
+          </button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="countPill" title="Total reports in current tab">
+          <span data-lucide="flag"></span>
+          <span id="totalCount">0</span>
+          <span>items</span>
+        </div>
+
+        <input class="searchInput" id="searchInput" type="search" placeholder="Search post title / writer / reason…">
+      </div>
+    </section>
+
+    <section class="grid" id="postGrid">
+      {% for report in post_reports %}
+        <article
+          class="reportCard"
+          data-search="{{ report['title'] }} {{ report['reporter_name'] }} {{ report['reason'] }}"
+        >
+          <div class="thumb">
+            {% if report['thumbnail'] %}
+              <img src="{{ url_for('static', filename='uploads/' + report['thumbnail']) }}" alt="{{ report['title'] }}">
+            {% else %}
+              <img src="https://picsum.photos/900/400?random={{ report['post_id'] }}" alt="{{ report['title'] }}">
+            {% endif %}
+          </div>
+          <div class="body">
+            <div class="rTitle">{{ report['title'] }}</div>
+
+            <div class="oneLine">
+              <span class="miniMeta"><span data-lucide="user"></span><span>{{ report['reporter_name'] }}</span></span>
+              <span class="miniMeta"><span data-lucide="calendar"></span><span>{{ report['created_at'] }}</span></span>
+              <span class="miniMeta"><span data-lucide="flag"></span><span>1 report</span></span>
+            </div>
+
+            <div class="reason">{{ report['reason'] }}</div>
+
+            <div class="actions">
+              <a class="actBtn" href="{{ url_for('post_detail', post_id=report['post_id'], slug=report['post_slug']) }}" target="_blank">
+                <span data-lucide="external-link"></span> View Post
+              </a>
+
+              <a class="actBtn primary" href="/admin_action_report/{{ report['id'] }}/dismiss">
+                <span data-lucide="x-circle"></span> Reject
+              </a>
+
+              <a class="actBtn danger" href="/admin_action_report/{{ report['id'] }}/delete_content">
+                <span data-lucide="trash-2"></span> Delete
+              </a>
+            </div>
+          </div>
+        </article>
+      {% else %}
+        <div class="emptyState">কোনো পোস্ট রিপোর্ট নেই।</div>
+      {% endfor %}
+    </section>
+
+    <section class="grid" id="commentGrid" style="display:none;">
+      {% for report in comment_reports %}
+        <article
+          class="commentCard"
+          data-search="{{ report['post_title'] }} {{ report['comment_content'] }} {{ report['reporter_name'] }} {{ report['reason'] }}"
+        >
+          <div class="commentTop">
+            <div class="commentBadge">
+              <span data-lucide="message-square-warning"></span>
+              Comment Report
+            </div>
+            <div class="miniMeta" style="color:var(--muted)">
+              <span data-lucide="flag"></span><span>1 report</span>
+            </div>
+          </div>
+
+          <div class="commentTitle">
+            On: {{ report['post_title'] }}
+          </div>
+
+          <div class="commentBubble">
+            <b style="font-weight:700">Comment:</b>
+            <span style="font-weight:300"> {{ report['comment_content'] }}</span>
+          </div>
+
+          <div class="commentMetaRow">
+            <span class="miniMeta"><span data-lucide="user"></span><span>{{ report['reporter_name'] }}</span></span>
+            <span class="miniMeta"><span data-lucide="calendar"></span><span>{{ report['created_at'] }}</span></span>
+          </div>
+
+          <div class="reason" style="margin-top:6px">
+            <b style="font-weight:700">Reason:</b> {{ report['reason'] }}
+          </div>
+
+          <div class="commentActions">
+            <a class="actBtn" href="{{ url_for('post_detail', post_id=report['post_id'], slug=report['post_slug']) }}" target="_blank">
+              <span data-lucide="message-square"></span> View Post
+            </a>
+
+            <a class="actBtn primary" href="/admin_action_report/{{ report['id'] }}/dismiss">
+              <span data-lucide="x-circle"></span> Reject
+            </a>
+
+            <a class="actBtn danger" href="/admin_action_report/{{ report['id'] }}/delete_content">
+              <span data-lucide="trash-2"></span> Delete
+            </a>
+          </div>
+        </article>
+      {% else %}
+        <div class="emptyState">কোনো কমেন্ট রিপোর্ট নেই।</div>
+      {% endfor %}
+    </section>
+  </main>
+
+  <script>
+    const reportGrid = document.getElementById("postGrid");
+    const commentGrid = document.getElementById("commentGrid");
+    const searchInput = document.getElementById("searchInput");
+    const totalCount = document.getElementById("totalCount");
+    const btnRefresh = document.getElementById("btnRefresh");
+    const tabPosts = document.getElementById("tabPosts");
+    const tabComments = document.getElementById("tabComments");
+
+    function setActiveTab(tab){
+      if(tab === "posts"){
+        tabPosts.classList.add("active");
+        tabComments.classList.remove("active");
+        reportGrid.style.display = "grid";
+        commentGrid.style.display = "none";
+        searchInput.placeholder = "Search post title / writer / reason…";
+      }else{
+        tabComments.classList.add("active");
+        tabPosts.classList.remove("active");
+        reportGrid.style.display = "none";
+        commentGrid.style.display = "grid";
+        searchInput.placeholder = "Search comment / user / reason…";
+      }
+      searchInput.value = "";
+      render();
+    }
+
+    function currentList(){
+      return (reportGrid.style.display !== "none")
+        ? Array.from(reportGrid.querySelectorAll("article"))
+        : Array.from(commentGrid.querySelectorAll("article"));
+    }
+
+    function render(){
+      const list = currentList();
+      const q = (searchInput.value || "").toLowerCase().trim();
+      let count = 0;
+      list.forEach(item => {
+        const hay = (item.dataset.search || "").toLowerCase();
+        const match = !q || hay.includes(q);
+        item.style.display = match ? "" : "none";
+        if (match) count += 1;
+      });
+      totalCount.textContent = count;
+    }
+
+    tabPosts?.addEventListener("click", () => setActiveTab("posts"));
+    tabComments?.addEventListener("click", () => setActiveTab("comments"));
+    searchInput?.addEventListener("input", render);
+    btnRefresh?.addEventListener("click", () => window.location.reload());
+
+    setActiveTab("posts");
+  </script>
 {% endblock %}

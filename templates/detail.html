@@ -2,13 +2,10 @@
 
 {% block title %}{{ post['title'] }} • Writo{% endblock %}
 
-<!-- ✅ detail page marker -->
 {% block body_class %}hasDetailTracker{% endblock %}
 
-<!-- ✅ tracker title (only detail will show it) -->
 {% block tracker_title %}{{ post['title'] }}{% endblock %}
 
-<!-- ✅ TOC modal content -->
 {% block toc_modal_content %}
   {% if toc_items %}
     <div style="display:grid; gap:10px;">
@@ -40,177 +37,794 @@
 {% endblock %}
 
 {% block content %}
+  <style>
+    .pageSection{
+      width:min(var(--wrap), calc(100vw - 28px));
+      margin:0 auto;
+      padding-top:12px;
+      padding-bottom:24px;
+    }
 
-  <!-- ✅ Report modal -->
+    .breadcrumbRow{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+    .bLine{display:flex;align-items:center;gap:6px;padding-left:10px;white-space:nowrap;overflow:hidden}
+    .bLine.topLine{
+      font-size:16px;
+      color:rgba(255,255,255,0.70);
+      font-weight:500;
+    }
+    body:not([data-theme="dark"]) .bLine.topLine{color:rgba(15,23,42,0.62)}
+    .crumb{display:inline-flex;align-items:center;gap:8px;min-width:0}
+    .crumb .label{overflow:hidden;text-overflow:ellipsis}
+    .sep{opacity:.45;font-size:12px}
+    .bIcon{font-size:14px;opacity:.9;width:18px;display:inline-flex;align-items:center;justify-content:center}
+    .bookLine{font-size:13px;color:rgba(255,255,255,0.58)}
+    body:not([data-theme="dark"]) .bookLine{color:rgba(15,23,42,0.52)}
+    .bookLine strong{color:var(--text);font-weight:500}
+
+    .hero{margin-top:12px}
+    .thumb{
+      width:100%;
+      height:210px;
+      border-radius:0;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+    }
+    body:not([data-theme="dark"]) .thumb{border:1px solid rgba(15,23,42,0.10)}
+    .thumb img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+      filter: saturate(1.05) contrast(1.05);
+    }
+
+    .metaRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:12px;
+      margin-bottom:10px;
+      padding-left:10px;
+    }
+
+    .author{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+
+    .avatarImg{
+      width:34px;height:34px;
+      border-radius:999px;
+      object-fit:cover;
+      border:1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.06);
+      flex:0 0 auto;
+      display:block;
+    }
+    body:not([data-theme="dark"]) .avatarImg{
+      border:1px solid rgba(15,23,42,0.12);
+      background: rgba(15,23,42,0.04);
+    }
+
+    .authorText{min-width:0}
+    .aName{
+      font-size:13px;
+      font-weight:500;
+      color:var(--text);
+      line-height:1.1;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:260px;
+    }
+    .aRole{
+      margin-top:3px;
+      font-size:12px;
+      color:rgba(255,255,255,0.55);
+      font-weight:300;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:320px;
+    }
+    body:not([data-theme="dark"]) .aRole{color:rgba(15,23,42,0.55)}
+
+    .metaRight{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      color:rgba(255,255,255,0.60);
+      font-weight:300;
+      font-size:12px;
+      padding-left:14px;
+      flex-wrap:wrap;
+    }
+    body:not([data-theme="dark"]) .metaRight{color:rgba(15,23,42,0.58)}
+    .metaDot{opacity:.6}
+
+    .iconAction{
+      border:none;
+      background:transparent;
+      width:32px;height:32px;
+      border-radius:12px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      color:var(--text);
+      user-select:none;
+    }
+    .iconAction:hover{background: rgba(255,255,255,0.08)}
+    body:not([data-theme="dark"]) .iconAction:hover{background: rgba(15,23,42,0.06)}
+    .iconAction:active{transform:scale(.98)}
+    .iconAction i{font-size:14px}
+
+    .savePill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      margin-left:2px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      cursor:pointer;
+      user-select:none;
+      color:var(--text);
+    }
+    body:not([data-theme="dark"]) .savePill{
+      border:1px solid rgba(15,23,42,0.12);
+      background: rgba(15,23,42,0.04);
+    }
+    .savePill:active{transform:scale(.98)}
+    .savePill i{font-size:14px}
+    .saveLabel{font-size:12px;font-weight:500}
+    .savePill[data-on="true"]{
+      background: rgba(255,255,255,0.10);
+      border-color: rgba(255,255,255,0.18);
+    }
+
+    .content{
+      margin-top:14px;
+      line-height:1.95;
+      padding-left:10px;
+      padding-right:10px;
+    }
+
+    h1{
+      margin:0 0 12px;
+      font-size:22px;
+      letter-spacing:-0.3px;
+      color:var(--text);
+      font-weight:700;
+    }
+
+    h2{
+      margin:46px 0 12px;
+      font-size:20px;
+      letter-spacing:-0.2px;
+      color:var(--text);
+      font-weight:700;
+    }
+    p{
+      margin:0 0 16px;
+      color:rgba(255,255,255,0.72);
+      font-weight:300;
+      font-size:15px;
+    }
+    body:not([data-theme="dark"]) p{color:rgba(15,23,42,0.70)}
+    ul{margin:0 0 16px 18px}
+    li{
+      margin:8px 0;
+      color:rgba(255,255,255,0.72);
+      font-weight:300;
+      font-size:15px;
+    }
+    body:not([data-theme="dark"]) li{color:rgba(15,23,42,0.70)}
+    .divider{
+      height:1px;
+      background: rgba(255,255,255,0.10);
+      margin:34px 0;
+    }
+    body:not([data-theme="dark"]) .divider{background: rgba(15,23,42,0.10)}
+
+    .note{
+      padding:12px 12px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      margin:18px 0 10px;
+      border-radius:16px;
+      color:rgba(255,255,255,0.68);
+      font-weight:300;
+      font-size:13px;
+      line-height:1.7;
+    }
+    body:not([data-theme="dark"]) .note{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+      color:rgba(15,23,42,0.70);
+    }
+
+    .blockTitle{
+      margin:44px 0 14px;
+      font-size:18px;
+      font-weight:700;
+      color:var(--text);
+      letter-spacing:-0.2px;
+    }
+
+    .commentComposer{
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      border-radius:18px;
+      padding:12px;
+    }
+    body:not([data-theme="dark"]) .commentComposer{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+
+    .composerRow{display:flex;gap:10px;align-items:flex-start}
+    .meAvatar{
+      width:34px;height:34px;
+      border-radius:999px;
+      object-fit:cover;
+      border:1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.06);
+      flex:0 0 auto;
+    }
+    body:not([data-theme="dark"]) .meAvatar{
+      border:1px solid rgba(15,23,42,0.12);
+      background: rgba(15,23,42,0.04);
+    }
+
+    .composerMain{flex:1;min-width:0}
+    .composerTop{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      margin-bottom:8px;
+    }
+    .composerName{
+      font-size:13px;
+      font-weight:500;
+      color:var(--text);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .commentCount{
+      font-size:12px;
+      font-weight:300;
+      color:rgba(255,255,255,0.55);
+    }
+    body:not([data-theme="dark"]) .commentCount{color:rgba(15,23,42,0.55)}
+
+    .commentInput{
+      width:100%;
+      min-height:92px;
+      resize:none;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      padding:10px 12px;
+      font-family:inherit;
+      color:var(--text);
+      outline:none;
+      line-height:1.6;
+      font-size:13px;
+      font-weight:300;
+    }
+    body:not([data-theme="dark"]) .commentInput{
+      border:1px solid rgba(15,23,42,0.12);
+      background: rgba(15,23,42,0.04);
+      color:var(--text);
+    }
+
+    .composerBottom{
+      margin-top:10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .hintSmall{
+      font-size:12px;
+      color:rgba(255,255,255,0.55);
+      font-weight:300;
+    }
+    body:not([data-theme="dark"]) .hintSmall{color:rgba(15,23,42,0.55)}
+
+    .btnRow{display:flex;gap:10px;align-items:center}
+    .ghostBtn{
+      border:none;background:transparent;
+      color:rgba(255,255,255,0.78);
+      cursor:pointer;
+      padding:8px 10px;border-radius:12px;
+      font-family:inherit;
+      font-size:12px;
+      font-weight:500;
+    }
+    body:not([data-theme="dark"]) .ghostBtn{color:rgba(15,23,42,0.70)}
+    .ghostBtn:hover{background: rgba(255,255,255,0.08)}
+    body:not([data-theme="dark"]) .ghostBtn:hover{background: rgba(15,23,42,0.06)}
+    .ghostBtn:active{transform:scale(.98)}
+
+    .primaryBtn{
+      border:none;
+      cursor:pointer;
+      padding:10px 12px;
+      border-radius:12px;
+      background: rgba(255,255,255,0.14);
+      color:var(--text);
+      font-family:inherit;
+      font-size:12px;
+      font-weight:700;
+    }
+    body:not([data-theme="dark"]) .primaryBtn{
+      background: rgba(15,23,42,0.08);
+      color:var(--text);
+    }
+    .primaryBtn:active{transform:scale(.98)}
+
+    .commentList{margin-top:14px;display:flex;flex-direction:column;gap:12px}
+    .commentItem{
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      border-radius:18px;
+      padding:12px;
+    }
+    body:not([data-theme="dark"]) .commentItem{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+
+    .commentHead{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      margin-bottom:8px;
+    }
+    .cLeft{display:flex;align-items:center;gap:10px;min-width:0}
+    .cAvatar{
+      width:30px;height:30px;border-radius:999px;object-fit:cover;
+      border:1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.06);
+      flex:0 0 auto;
+    }
+    body:not([data-theme="dark"]) .cAvatar{
+      border:1px solid rgba(15,23,42,0.12);
+      background: rgba(15,23,42,0.04);
+    }
+    .cName{
+      font-size:13px;font-weight:500;color:var(--text);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      max-width:220px;
+    }
+    .cTime{font-size:12px;font-weight:300;color:rgba(255,255,255,0.55)}
+    body:not([data-theme="dark"]) .cTime{color:rgba(15,23,42,0.55)}
+
+    .cBody{
+      font-size:13px;
+      font-weight:300;
+      line-height:1.7;
+      color:rgba(255,255,255,0.72);
+      word-break:break-word;
+    }
+    body:not([data-theme="dark"]) .cBody{color:rgba(15,23,42,0.70)}
+
+    .cActions{
+      margin-top:10px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .miniIconBtn{
+      border:none;
+      background:transparent;
+      height:34px;
+      border-radius:12px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      color:var(--text);
+      user-select:none;
+      padding:0 10px;
+      gap:8px;
+    }
+    .miniIconBtn:hover{background: rgba(255,255,255,0.08)}
+    body:not([data-theme="dark"]) .miniIconBtn:hover{background: rgba(15,23,42,0.06)}
+    .miniIconBtn:active{transform:scale(.98)}
+    .miniIconBtn i{font-size:15px}
+
+    .loveCount{
+      font-size:12px;
+      font-weight:500;
+      color:rgba(255,255,255,0.62);
+      min-width:10px;
+      text-align:left;
+    }
+    body:not([data-theme="dark"]) .loveCount{color:rgba(15,23,42,0.56)}
+
+    .miniIconBtn[data-on="true"] i{color:#ff4d6d;}
+    body:not([data-theme="dark"]) .miniIconBtn[data-on="true"] i{color:#ff3b66;}
+
+    .relatedWrap{margin-top:44px}
+    .relatedGrid{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:12px;
+    }
+
+    .relCard{
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      overflow:hidden;
+      cursor:pointer;
+      transform: translateZ(0);
+    }
+    body:not([data-theme="dark"]) .relCard{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+    .relCard:active{transform:scale(.99)}
+
+    .relImg{
+      width:100%;
+      height:110px;
+      background: rgba(255,255,255,0.06);
+      border-bottom:1px solid rgba(255,255,255,0.10);
+      overflow:hidden;
+    }
+    body:not([data-theme="dark"]) .relImg{
+      background: rgba(15,23,42,0.04);
+      border-bottom:1px solid rgba(15,23,42,0.10);
+    }
+    .relImg img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+
+    .relBody{padding:12px}
+    .relTitle{
+      font-size:13.5px;
+      font-weight:700;
+      color:var(--text);
+      line-height:1.35;
+      margin-bottom:8px;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+    }
+    .relMeta{
+      font-size:12px;
+      font-weight:300;
+      color:rgba(255,255,255,0.55);
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    body:not([data-theme="dark"]) .relMeta{color:rgba(15,23,42,0.55)}
+    .relMeta .dot{opacity:.6}
+
+    @media(max-width:520px){
+      .thumb{height:190px}
+      .relatedGrid{grid-template-columns: repeat(2, 1fr)}
+      .relImg{height:96px}
+    }
+  </style>
+
   <section class="writoModal" id="reportModal" aria-hidden="true" style="top:72px;">
     <div class="writoModalInner">
       <div class="writoModalHead">
-        <div class="writoModalTitle"><span data-lucide="flag"></span> রিপোর্ট করুন</div>
+        <div class="writoModalTitle"><span data-lucide="flag"></span> Report</div>
         <button class="writoModalClose" type="button" onclick="closeReportModal()" aria-label="Close">
           <span data-lucide="x"></span>
         </button>
       </div>
 
-      <form action="/report_content" method="post">
-        <input type="hidden" name="post_id" id="report_post_id">
+      <form id="reportForm" action="/report_content" method="post">
+        <input type="hidden" name="post_id" id="report_post_id" value="{{ post['id'] }}">
         <input type="hidden" name="comment_id" id="report_comment_id">
 
         <label style="display:block;margin-bottom:6px;font-weight:700;font-size:13px;color:var(--muted);">
-          কারণ নির্বাচন করুন
+          Choose a reason
         </label>
         <select name="reason"
                 style="width:100%;height:42px;border-radius:14px;border:1px solid rgba(0,0,0,0.10);background:rgba(255,255,255,0.55);padding:0 12px;color:var(--text);">
-          <option value="Spam">স্প্যাম / অপ্রয়োজনীয়</option>
-          <option value="Abusive">খারাপ ভাষা / গালিগালাজ</option>
-          <option value="Misleading">ভুল তথ্য</option>
-          <option value="Harassment">হয়রানি</option>
+          <option value="Spam">Spam / irrelevant</option>
+          <option value="Abusive">Abusive language</option>
+          <option value="Misleading">Misleading info</option>
+          <option value="Harassment">Harassment</option>
         </select>
 
         <button type="submit"
                 style="margin-top:12px;width:100%;height:42px;border:none;border-radius:14px;background:#ef4444;color:#fff;font-weight:800;cursor:pointer;">
-          জমা দিন
+          Submit report
         </button>
       </form>
     </div>
   </section>
 
-  <div class="post">
-    <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px;">
-      {{ post['category'] }}
+  <div class="pageSection" id="pageRoot">
+    <div class="breadcrumbRow" aria-label="Page location">
+      <div class="bLine topLine">
+        <span class="crumb" aria-label="Home">
+          <i class="fa-solid fa-house bIcon"></i>
+        </span>
+        <i class="fa-solid fa-chevron-right sep" aria-hidden="true"></i>
+        <span class="crumb">
+          <i class="fa-regular fa-newspaper bIcon"></i>
+          <span class="label">Blog</span>
+        </span>
+      </div>
+
+      <div class="bLine bookLine">
+        <span class="crumb">
+          <i class="fa-solid fa-book-open bIcon"></i>
+          <strong class="label">{{ post['category'] }}</strong>
+        </span>
+      </div>
     </div>
 
-    <!-- ✅ first marker -->
-    <h1 id="postTop" class="toc-marker" data-title="{{ post['title'] }}" style="font-size:20px;line-height:1.25;">
-      {{ post['title'] }}
-    </h1>
-
-    <p style="color: var(--muted); margin-top:8px; font-size:13px; line-height:1.6;">
-      {{ post['intro'] }}
-    </p>
-
-    <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
-      <div style="width:34px;height:34px;border-radius:50%;background:rgba(148,163,184,.25);overflow:hidden;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--text);">
-        {% if post['author_profile_pic'] %}
-          <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}"
-               alt="profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+    <div class="hero">
+      <div class="thumb" aria-label="Thumbnail">
+        {% if post['thumbnail'] %}
+          <img
+            src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}"
+            alt="{{ post['title'] }} thumbnail"
+            loading="lazy"
+          />
         {% else %}
-          {{ post['author_display_name'][:1] }}
+          <img
+            src="https://picsum.photos/1200/600?random={{ post['id'] }}"
+            alt="{{ post['title'] }} thumbnail"
+            loading="lazy"
+          />
         {% endif %}
       </div>
 
-      <div style="min-width:0;">
-        <a href="{{ url_for('public_profile', user_id=post['user_id']) }}"
-           style="text-decoration:none;color:var(--text);font-weight:800;font-size:13px;display:inline-block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-          {{ post['author_display_name'] }}
-        </a>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px;">⏱️ {{ post['read_time'] }} পড়া</div>
-      </div>
-    </div>
-
-    {% if post['thumbnail'] %}
-      <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}"
-           style="margin-top:14px;border-radius:16px;width:100%;height:auto;">
-    {% endif %}
-
-    <div class="post-content" style="margin-top:14px; line-height:1.85; font-size:15px;">
-      {% autoescape false %}
-        {{ content | replace('\n', '<br>') }}
-      {% endautoescape %}
-    </div>
-
-    <hr style="margin-top:18px;border:none;border-top:1px solid rgba(148,163,184,.25);">
-
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;">
-      <div style="display:flex;align-items:center;gap:14px;">
-        {% if current_user.is_authenticated %}
-          <a href="{{ url_for('like_post', post_id=post['id']) }}" style="text-decoration:none;">
-            {% if user_liked_post %}<span style="font-size:22px;">❤️</span>{% else %}<span style="font-size:22px;">🤍</span>{% endif %}
-          </a>
-        {% else %}
-          <a href="/login" style="text-decoration:none;"><span style="font-size:22px;">🤍</span></a>
-        {% endif %}
-        <span style="font-weight:800;color:var(--muted);font-size:13px;">{{ post_like_count }} Likes</span>
-
-        {% if current_user.is_authenticated %}
-          <button onclick="openReportModal('post','{{ post.id }}')"
-                  style="background:none;border:none;font-size:12px;color:#ef4444;cursor:pointer;text-decoration:underline;font-weight:800;">
-            ⚠️ Report
-          </button>
-        {% endif %}
-      </div>
-
-      <div>
-        {% if current_user.is_authenticated %}
-          <a href="{{ url_for('toggle_bookmark', post_id=post['id']) }}" style="text-decoration:none;font-size:22px;" title="Bookmark">
-            {% if is_bookmarked %} 🔖 {% else %} 🏷️ {% endif %}
-          </a>
-        {% else %}
-          <a href="/login" style="text-decoration:none;font-size:22px;">🏷️</a>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-
-  <div class="post">
-    <h3 style="margin-bottom:12px;">মন্তব্য সমূহ</h3>
-
-    {% if current_user.is_authenticated %}
-      <form action="{{ url_for('add_comment', post_id=post['id']) }}" method="post" style="margin-bottom:18px;">
-        <textarea name="content" rows="3" placeholder="সুন্দর একটি মন্তব্য করুন..." required
-                  style="width:100%;padding:12px;border-radius:14px;border:1px solid rgba(0,0,0,0.10);background:rgba(255,255,255,0.55);color:var(--text);"></textarea>
-        <button type="submit"
-                style="margin-top:10px;height:40px;padding:0 14px;border:none;border-radius:14px;background:var(--text);color:var(--bg);font-weight:800;cursor:pointer;">
-          মন্তব্য করুন
-        </button>
-      </form>
-    {% else %}
-      <div class="writoHint" style="margin:0;background:rgba(59,130,246,.10);border:1px solid rgba(59,130,246,.18);border-radius:16px;padding:12px;">
-        মন্তব্য করতে <a href="/login" style="color:var(--text);font-weight:800;">লগ ইন</a> করুন।
-      </div>
-    {% endif %}
-
-    {% for comment in comments %}
-      <div style="border-bottom:1px solid rgba(148,163,184,.20); padding-bottom:12px; margin-bottom:12px;">
-        <div style="display:flex;justify-content:space-between;gap:10px;">
-          <strong style="color:var(--text);font-size:13px;">{{ comment['username'] }}</strong>
-          <small style="color:var(--muted);font-size:12px;">{{ comment['created_at'] }}</small>
-        </div>
-        <p style="margin:6px 0;color:var(--text);font-size:13px;line-height:1.6;">{{ comment['content'] }}</p>
-
-        <div style="display:flex;align-items:center;gap:14px;">
-          <div style="display:flex;align-items:center;gap:6px;">
-            {% if current_user.is_authenticated %}
-              <a href="{{ url_for('like_comment', comment_id=comment['id'], post_id=post['id']) }}" style="text-decoration:none;">
-                {% if comment['id'] in liked_comments %}<span style="font-size:16px;">❤️</span>{% else %}<span style="font-size:16px;">🤍</span>{% endif %}
-              </a>
-            {% else %}
-              <span style="font-size:16px;">🤍</span>
-            {% endif %}
-            <small style="color:var(--muted);font-weight:800;">{{ comment['like_count'] }}</small>
+      <div class="metaRow">
+        <div class="author">
+          {% if post['author_profile_pic'] %}
+            <img
+              class="avatarImg"
+              src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}"
+              alt="{{ post['author_display_name'] }}"
+              loading="lazy"
+            />
+          {% else %}
+            <img
+              class="avatarImg"
+              src="https://ui-avatars.com/api/?name={{ post['author_display_name'] }}&background=0f172a&color=f8fafc"
+              alt="{{ post['author_display_name'] }}"
+              loading="lazy"
+            />
+          {% endif %}
+          <div class="authorText">
+            <div class="aName">{{ post['author_display_name'] }}</div>
+            <div class="aRole">Staff Writer</div>
           </div>
+        </div>
+
+        <div class="metaRight" aria-label="Post details">
+          <span><i class="fa-regular fa-calendar"></i> {{ post['short_date'] }}</span>
+          <span class="metaDot">•</span>
+          <span><i class="fa-regular fa-clock"></i> {{ post['read_time_en'] }}</span>
 
           {% if current_user.is_authenticated %}
-            <button onclick="openReportModal('comment','{{ comment.id }}','{{ post.id }}')"
-                    style="background:none;border:none;font-size:12px;color:#ef4444;cursor:pointer;font-weight:800;">
-              ⚠️ Report
+            <button class="iconAction" id="postReportBtn" type="button" aria-label="Report this post" title="Report">
+              <i class="fa-regular fa-flag"></i>
             </button>
+
+            <button
+              class="savePill"
+              id="savePill"
+              type="button"
+              aria-label="Save post"
+              data-on="{{ 'true' if is_bookmarked else 'false' }}"
+              data-url="{{ url_for('toggle_bookmark', post_id=post['id']) }}"
+            >
+              <i class="{{ 'fa-solid' if is_bookmarked else 'fa-regular' }} fa-bookmark" id="saveIcon"></i>
+              <span class="saveLabel" id="saveLabel">{{ 'Saved' if is_bookmarked else 'Save' }}</span>
+            </button>
+          {% else %}
+            <a class="iconAction" href="/login" aria-label="Login to report" title="Login">
+              <i class="fa-regular fa-flag"></i>
+            </a>
+            <a class="savePill" href="/login" aria-label="Login to save">
+              <i class="fa-regular fa-bookmark"></i>
+              <span class="saveLabel">Save</span>
+            </a>
           {% endif %}
         </div>
       </div>
-    {% else %}
-      <p style="color:var(--muted);text-align:center;">কোনো মন্তব্য নেই। আপনিই প্রথম মন্তব্য করুন!</p>
-    {% endfor %}
-  </div>
+    </div>
 
+    <main class="content" id="trackRoot">
+      <h1 id="postTop" class="toc-marker" data-title="{{ post['title'] }}">{{ post['title'] }}</h1>
+      <section data-track="true" data-title="{{ post['title'] }}" id="intro">
+        <div class="note" style="margin-top:12px">
+          {{ post['intro'] }}
+        </div>
+      </section>
+
+      <section data-track="true" data-title="Content">
+        <div class="post-content">
+          {% autoescape false %}
+            {{ content | replace('\n', '<br>') }}
+          {% endautoescape %}
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <section data-track="true" data-title="Engagement">
+        <div class="metaRow" style="padding-left:0;">
+          <div class="metaRight" style="padding-left:0;">
+            {% if current_user.is_authenticated %}
+              <button
+                class="iconAction"
+                id="postLikeBtn"
+                type="button"
+                aria-label="Like this post"
+                data-url="{{ url_for('like_post', post_id=post['id']) }}"
+                data-liked="{{ 'true' if user_liked_post else 'false' }}"
+              >
+                <i class="{{ 'fa-solid' if user_liked_post else 'fa-regular' }} fa-heart"></i>
+              </button>
+            {% else %}
+              <a class="iconAction" href="/login" aria-label="Login to like">
+                <i class="fa-regular fa-heart"></i>
+              </a>
+            {% endif %}
+            <span class="metaDot">•</span>
+            <span><span id="postLikeCount">{{ post_like_count }}</span> likes</span>
+          </div>
+        </div>
+      </section>
+
+      <section data-track="true" data-title="Comments" id="comments">
+        <h2 class="blockTitle">Comments</h2>
+
+        {% if current_user.is_authenticated %}
+          <div class="commentComposer">
+            <div class="composerRow">
+              {% if current_user.profile_pic %}
+                <img
+                  class="meAvatar"
+                  src="{{ url_for('static', filename='profile_uploads/' + current_user.profile_pic) }}"
+                  alt="{{ current_user.display_name }}"
+                  loading="lazy"
+                />
+              {% else %}
+                <img
+                  class="meAvatar"
+                  src="https://ui-avatars.com/api/?name={{ current_user.display_name }}&background=0f172a&color=f8fafc"
+                  alt="{{ current_user.display_name }}"
+                  loading="lazy"
+                />
+              {% endif %}
+
+              <div class="composerMain">
+                <div class="composerTop">
+                  <div class="composerName">{{ current_user.display_name }}</div>
+                  <div class="commentCount"><span id="commentCount">{{ comments|length }}</span> comments</div>
+                </div>
+
+                <textarea class="commentInput" id="commentInput" placeholder="Write a comment…"></textarea>
+
+                <div class="composerBottom">
+                  <div class="hintSmall">Be respectful. Comments are public.</div>
+                  <div class="btnRow">
+                    <button class="ghostBtn" id="clearBtn" type="button">Clear</button>
+                    <button class="primaryBtn" id="postBtn" type="button" data-url="{{ url_for('add_comment', post_id=post['id']) }}">Post Comment</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="commentComposer">
+            <div class="hintSmall">Please <a href="/login" style="color:var(--text);font-weight:700;">log in</a> to comment.</div>
+          </div>
+        {% endif %}
+
+        <div class="commentList" id="commentList">
+          {% for comment in comments %}
+            <div class="commentItem" data-comment-id="{{ comment['id'] }}">
+              <div class="commentHead">
+                <div class="cLeft">
+                  <img class="cAvatar" src="https://ui-avatars.com/api/?name={{ comment['username'] }}&background=0f172a&color=f8fafc" alt="{{ comment['username'] }}" loading="lazy">
+                  <div class="cName">{{ comment['username'] }}</div>
+                </div>
+                <div class="cTime">{{ comment['created_at'] }}</div>
+              </div>
+              <div class="cBody">{{ comment['content'] }}</div>
+              <div class="cActions">
+                {% if current_user.is_authenticated %}
+                  <button
+                    class="miniIconBtn loveBtn"
+                    type="button"
+                    aria-label="Love this comment"
+                    data-on="{{ 'true' if comment['id'] in liked_comments else 'false' }}"
+                    data-count="{{ comment['like_count'] }}"
+                    data-url="{{ url_for('like_comment', comment_id=comment['id'], post_id=post['id']) }}"
+                    title="Love"
+                  >
+                    <i class="{{ 'fa-solid' if comment['id'] in liked_comments else 'fa-regular' }} fa-heart"></i>
+                    <span class="loveCount">{{ comment['like_count'] }}</span>
+                  </button>
+                  <button
+                    class="miniIconBtn reportCommentBtn"
+                    type="button"
+                    aria-label="Report this comment"
+                    title="Report"
+                    data-comment-id="{{ comment['id'] }}"
+                  >
+                    <i class="fa-regular fa-flag"></i>
+                  </button>
+                {% else %}
+                  <a class="miniIconBtn" href="/login" aria-label="Login to like">
+                    <i class="fa-regular fa-heart"></i>
+                    <span class="loveCount">{{ comment['like_count'] }}</span>
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+          {% else %}
+            <div class="commentItem">
+              <div class="cBody">No comments yet. Be the first to comment!</div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section data-track="true" data-title="Related Posts" class="relatedWrap" id="related">
+        <h2 class="blockTitle">Related Posts</h2>
+
+        <div class="relatedGrid" aria-label="Related posts grid">
+          {% for related in related_posts %}
+            <a class="relCard" href="{{ url_for('post_detail', post_id=related['id'], slug=related['slug']) }}" role="button">
+              <div class="relImg">
+                {% if related['thumbnail'] %}
+                  <img src="{{ url_for('static', filename='uploads/' + related['thumbnail']) }}" alt="{{ related['title'] }}" loading="lazy">
+                {% else %}
+                  <img src="https://picsum.photos/800/450?random={{ related['id'] }}" alt="{{ related['title'] }}" loading="lazy">
+                {% endif %}
+              </div>
+              <div class="relBody">
+                <div class="relTitle">{{ related['title'] }}</div>
+                <div class="relMeta"><span>{{ related['read_time_en'] }}</span><span class="dot">•</span><span>{{ related['category'] }}</span></div>
+              </div>
+            </a>
+          {% else %}
+            <div class="relCard">
+              <div class="relBody">
+                <div class="relTitle">No related posts yet.</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+    </main>
+  </div>
 {% endblock %}
 
 {% block body_scripts %}
 <script>
   const currentTitleEl = document.getElementById("currentSection");
-  const tocModal = document.getElementById("writoModalToc");
 
   function jumpToSection(id, title){
-    // close any open modal
     document.querySelectorAll("[data-writo-close]").forEach(btn => btn.click());
 
     if (currentTitleEl) currentTitleEl.textContent = title;
@@ -223,7 +837,6 @@
     }
   }
 
-  // scroll-based section title update
   function updateActiveTitle(){
     const markers = document.querySelectorAll(".toc-marker");
     if (!markers.length) return;
@@ -238,7 +851,6 @@
   updateActiveTitle();
   window.addEventListener("scroll", () => requestAnimationFrame(updateActiveTitle), { passive:true });
 
-  // Report modal open/close
   const reportModal = document.getElementById("reportModal");
   function openReportModal(type, id, postId=null){
     reportModal.classList.add("open");
@@ -251,6 +863,133 @@
     reportModal.classList.remove("open");
     document.body.classList.remove("hasOverlay");
   }
+
+  function fetchJson(url, options = {}){
+    return fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "X-Requested-With": "fetch",
+        ...(options.headers || {})
+      }
+    }).then(res => res.json());
+  }
+
+  const reportBtn = document.getElementById("postReportBtn");
+  reportBtn?.addEventListener("click", () => openReportModal("post", "{{ post['id'] }}"));
+
+  document.getElementById("reportForm")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    fetch(form.action, {
+      method: "POST",
+      body: data,
+      headers: { "Accept": "application/json", "X-Requested-With": "fetch" }
+    }).then(() => {
+      closeReportModal();
+    });
+  });
+
+  const savePill = document.getElementById("savePill");
+  const saveIcon = document.getElementById("saveIcon");
+  const saveLabel = document.getElementById("saveLabel");
+
+  savePill?.addEventListener("click", () => {
+    const url = savePill.dataset.url;
+    if (!url) return;
+    fetchJson(url, { method: "POST" }).then(data => {
+      const on = Boolean(data.bookmarked);
+      savePill.dataset.on = String(on);
+      saveIcon.className = `${on ? "fa-solid" : "fa-regular"} fa-bookmark`;
+      saveLabel.textContent = on ? "Saved" : "Save";
+    });
+  });
+
+  const postLikeBtn = document.getElementById("postLikeBtn");
+  const postLikeCount = document.getElementById("postLikeCount");
+  postLikeBtn?.addEventListener("click", () => {
+    const url = postLikeBtn.dataset.url;
+    if (!url) return;
+    fetchJson(url, { method: "POST" }).then(data => {
+      postLikeBtn.dataset.liked = String(data.liked);
+      const icon = postLikeBtn.querySelector("i");
+      if (icon) icon.className = `${data.liked ? "fa-solid" : "fa-regular"} fa-heart`;
+      if (postLikeCount) postLikeCount.textContent = data.count;
+    });
+  });
+
+  const commentInput = document.getElementById("commentInput");
+  const commentList = document.getElementById("commentList");
+  const commentCount = document.getElementById("commentCount");
+  const postBtn = document.getElementById("postBtn");
+  const clearBtn = document.getElementById("clearBtn");
+
+  function wireCommentButtons(root){
+    root.querySelectorAll(".loveBtn").forEach(btn => {
+      const url = btn.dataset.url;
+      btn.addEventListener("click", () => {
+        if (!url) return;
+        fetchJson(url, { method: "POST" }).then(data => {
+          btn.dataset.on = String(data.liked);
+          const icon = btn.querySelector("i");
+          if (icon) icon.className = `${data.liked ? "fa-solid" : "fa-regular"} fa-heart`;
+          const countEl = btn.querySelector(".loveCount");
+          if (countEl) countEl.textContent = data.count;
+        });
+      });
+    });
+
+    root.querySelectorAll(".reportCommentBtn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const commentId = btn.dataset.commentId;
+        if (!commentId) return;
+        openReportModal("comment", commentId, "{{ post['id'] }}");
+      });
+    });
+  }
+
+  postBtn?.addEventListener("click", () => {
+    const url = postBtn.dataset.url;
+    const content = (commentInput?.value || "").trim();
+    if (!url || !content) return;
+    fetchJson(url, { method: "POST", body: JSON.stringify({ content }) }).then(data => {
+      if (!data || !data.id) return;
+      const item = document.createElement("div");
+      item.className = "commentItem";
+      item.innerHTML = `
+        <div class="commentHead">
+          <div class="cLeft">
+            <img class="cAvatar" src="https://ui-avatars.com/api/?name=${data.username}&background=0f172a&color=f8fafc" alt="${data.username}">
+            <div class="cName">${data.username}</div>
+          </div>
+          <div class="cTime">${data.created_at}</div>
+        </div>
+        <div class="cBody"></div>
+        <div class="cActions">
+          <button class="miniIconBtn loveBtn" type="button" aria-label="Love this comment" data-on="false" data-count="0" data-url="/like_comment/${data.id}/{{ post['id'] }}" title="Love">
+            <i class="fa-regular fa-heart"></i>
+            <span class="loveCount">0</span>
+          </button>
+          <button class="miniIconBtn reportCommentBtn" type="button" aria-label="Report this comment" title="Report" data-comment-id="${data.id}">
+            <i class="fa-regular fa-flag"></i>
+          </button>
+        </div>
+      `;
+      item.querySelector(".cBody").textContent = data.content;
+      commentList?.prepend(item);
+      if (commentCount) commentCount.textContent = String(Number(commentCount.textContent || "0") + 1);
+      if (commentInput) commentInput.value = "";
+      wireCommentButtons(item);
+    });
+  });
+
+  clearBtn?.addEventListener("click", () => {
+    if (commentInput) commentInput.value = "";
+  });
+
+  wireCommentButtons(document);
 
   window.jumpToSection = jumpToSection;
   window.openReportModal = openReportModal;

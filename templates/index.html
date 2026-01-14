@@ -1,143 +1,943 @@
 {% extends 'base.html' %}
 
 {% block content %}
+  <style>
+    .homeContent {
+      --soft: #f8fafc;
+      --softBorder: #e2e8f0;
+      --shadow: 0 10px 30px rgba(16, 24, 40, 0.06);
+      --img-overlay: rgba(255, 255, 255, 0.75);
+      --img-stroke: rgba(15, 23, 42, 0.1);
+      --track: #e5e7eb;
+      --thumb: #9ca3af;
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 12px;
+    }
 
-    {% if trending_posts %}
-        <div class="section-header">
-            <span class="section-title" style="color: #d35400;">🔥 এখন ট্রেন্ডিং (সবচেয়ে জনপ্রিয়)</span>
+    body[data-theme="dark"] .homeContent {
+      --soft: rgba(255, 255, 255, 0.06);
+      --softBorder: rgba(255, 255, 255, 0.12);
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+      --img-overlay: rgba(10, 10, 10, 0.65);
+      --img-stroke: rgba(255, 255, 255, 0.12);
+      --track: rgba(255, 255, 255, 0.14);
+      --thumb: rgba(255, 255, 255, 0.3);
+    }
+
+    .imgBox {
+      position: relative;
+      overflow: hidden;
+      background: #e9edf6;
+    }
+
+    body[data-theme="dark"] .imgBox {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .imgBox img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .trendWrap {
+      max-width: 520px;
+      margin: 12px auto 0;
+      padding: 0 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .carousel {
+      width: 100%;
+      aspect-ratio: 16/6.8;
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    body[data-theme="dark"] .carousel {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .slides {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .slides img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+
+    .slides img.active {
+      opacity: 1;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.52));
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .slide-title {
+      position: absolute;
+      bottom: 42px;
+      left: 18px;
+      z-index: 4;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.3;
+      max-width: 80%;
+      letter-spacing: -0.2px;
+    }
+
+    .arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.35);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 5;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      user-select: none;
+    }
+
+    .arrow.left {
+      left: 10px;
+    }
+
+    .arrow.right {
+      right: 10px;
+    }
+
+    .carousel:hover .arrow,
+    .carousel:active .arrow {
+      opacity: 1;
+    }
+
+    .arrow i {
+      font-size: 12px;
+    }
+
+    .link-icon {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.35);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 5;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      user-select: none;
+    }
+
+    .carousel:hover .link-icon,
+    .carousel:active .link-icon {
+      opacity: 1;
+    }
+
+    .link-icon i {
+      font-size: 12px;
+    }
+
+    .dots {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 7px;
+      z-index: 5;
+    }
+
+    .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.4);
+      transition: 0.25s;
+      cursor: pointer;
+    }
+
+    .dot.active {
+      width: 14px;
+      height: 5px;
+      border-radius: 6px;
+      background: #fff;
+    }
+
+    .sectionHead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 14px 2px 10px;
+    }
+
+    .sectionTitleHead {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: 0.4px;
+      color: var(--muted);
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+
+    .viewAllLink {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: 0.3px;
+      font-weight: 300;
+    }
+
+    .latestList {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-bottom: 14px;
+    }
+
+    .latestCard {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .thumb {
+      width: 100%;
+      aspect-ratio: 16/8.2;
+      background: #f2f3f7;
+    }
+
+    .content {
+      padding: 12px 12px 10px;
+    }
+
+    .badgeRow {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text);
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--soft);
+      border: 1px solid var(--softBorder);
+    }
+
+    .title {
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--text);
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .excerpt {
+      font-size: 13px;
+      font-weight: 300;
+      line-height: 1.5;
+      color: var(--muted);
+      margin-bottom: 10px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .metaRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .metaLeft {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex: 0 0 auto;
+      background: #e9edf6;
+    }
+
+    .author {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 170px;
+    }
+
+    .subMeta {
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .dotMini {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: #cbd5e1;
+      display: inline-block;
+    }
+
+    .metaRight {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 0 0 auto;
+    }
+
+    .comments {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .comments i {
+      font-size: 12px;
+    }
+
+    .bookmarkBtn {
+      width: 32px;
+      height: 32px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      color: var(--text);
+    }
+
+    body[data-theme="dark"] .bookmarkBtn {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .bookmarkBtn i {
+      font-size: 15px;
+    }
+
+    .loveSection {
+      margin-top: 12px;
+      padding-bottom: 18px;
+    }
+
+    .sectionTitle {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0 0 12px;
+      letter-spacing: 0.2px;
+      color: var(--text);
+    }
+
+    .catHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .catName {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .catPill {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text);
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--soft);
+      border: 1px solid var(--softBorder);
+    }
+
+    .catMore {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--softBorder);
+      background: transparent;
+    }
+
+    .postRow {
+      display: flex;
+      gap: 12px;
+      overflow: auto;
+      padding: 2px 2px 10px;
+      scroll-snap-type: x mandatory;
+      scroll-padding: 2px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .postRow::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .postRow::-webkit-scrollbar-thumb {
+      background: #dde3ee;
+      border-radius: 999px;
+    }
+
+    body[data-theme="dark"] .postRow::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .postRow::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .postMini {
+      flex: 0 0 240px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      scroll-snap-align: start;
+      transition: transform 0.12s ease;
+    }
+
+    .postMini:active {
+      transform: scale(0.99);
+    }
+
+    .postMini a {
+      display: block;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .miniThumb {
+      width: 100%;
+      aspect-ratio: 16/8.8;
+      background: #f2f3f7;
+    }
+
+    .miniBody {
+      padding: 10px 10px 10px;
+    }
+
+    .miniTitle {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 6px;
+      letter-spacing: 0.15px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      color: var(--text);
+    }
+
+    .miniDesc {
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--muted);
+      line-height: 1.4;
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .miniMeta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 6px;
+      border-top: 0.5px solid var(--border);
+    }
+
+    .miniLeft {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .miniAvatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e9edf6;
+      flex: 0 0 auto;
+    }
+
+    .miniAuthor {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 140px;
+    }
+
+    .sub {
+      font-size: 10px;
+      font-weight: 300;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .miniDot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: #cbd5e1;
+      display: inline-block;
+    }
+
+    .miniRight {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      flex: 0 0 auto;
+    }
+
+    .miniRight i {
+      font-size: 12px;
+    }
+
+    .topWriters {
+      margin-top: 8px;
+      padding-bottom: 18px;
+    }
+
+    .writersHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .writersTitle {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: var(--text);
+    }
+
+    .writersViewAll {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--softBorder);
+      background: transparent;
+    }
+
+    .writerRow {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding: 4px 0 8px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .writerRow::-webkit-scrollbar {
+      display: none;
+    }
+
+    .writer {
+      flex: 0 0 auto;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: #e9edf6;
+      box-shadow: 0 6px 14px rgba(16, 24, 40, 0.08);
+      scroll-snap-align: start;
+    }
+
+    body[data-theme="dark"] .writer {
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.35);
+    }
+
+    .scrollIndicator {
+      height: 2px;
+      width: 100%;
+      background: var(--track);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .scrollThumb {
+      height: 100%;
+      width: 40%;
+      background: var(--thumb);
+      border-radius: 999px;
+      transform: translateX(0);
+    }
+
+    @media (max-width: 520px) {
+      .homeContent {
+        padding: 10px;
+      }
+
+      .trendWrap {
+        padding: 0 10px;
+      }
+
+      .postMini {
+        flex-basis: 220px;
+      }
+
+      .writer {
+        width: 52px;
+        height: 52px;
+      }
+    }
+  </style>
+
+  {% if trending_posts %}
+    <section class="trendWrap">
+      <div class="carousel" id="trendCarousel">
+        <div class="slides" id="slides">
+          {% for post in trending_posts %}
+            <img
+              src="{{ url_for('static', filename='uploads/' + (post['trending_thumbnail'] or post['thumbnail'])) }}"
+              alt="{{ post['title'] }}"
+              data-title="{{ post['title'] }}"
+              data-link="{{ url_for('post_detail', post_id=post['id'], slug=post['slug']) }}"
+              class="{% if loop.first %}active{% endif %}"
+            >
+          {% endfor %}
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-            {% for post in trending_posts %}
-                <div class="post" style="padding: 0; overflow: hidden;">
+        <div class="overlay"></div>
+        <div class="slide-title" id="slideTitle"></div>
 
-                    {% if post['trending_thumbnail'] %}
-                        <img src="{{ url_for('static', filename='uploads/' + post['trending_thumbnail']) }}" 
-                             style="width: 100%; height: 260px; object-fit: cover; border-radius: 0;">
-                    {% else %}
-                        <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" 
-                             style="width: 100%; height: 260px; object-fit: cover; border-radius: 0;">
-                    {% endif %}
-
-                    <div style="padding: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span class="tag" style="background: #d35400; color: white;">{{ post['category'] }}</span>
-                            <span style="font-size: 0.85em; color: #666;">👁️ {{ post['views'] }} জন দেখেছেন</span>
-                        </div>
-
-                        <div class="author-row">
-                            <div class="author-avatar">
-                                {% if post['author_profile_pic'] %}
-                                    <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="profile">
-                                {% else %}
-                                    {{ post['author_display_name'][:1] }}
-                                {% endif %}
-                            </div>
-                            <div>
-                                <a class="author-name" href="{{ url_for('public_profile', user_id=post['user_id']) }}">{{ post['author_display_name'] }}</a>
-                                <div class="author-meta">⏱️ {{ post['read_time'] }} পড়া</div>
-                            </div>
-                        </div>
-
-                        <h2 style="margin-top: 10px;">{{ post['title'] }}</h2>
-                        <p style="color: #666;">{{ post['intro'] }}</p>
-                        <a href="{{ url_for('post_detail', post_id=post['id'], slug=post['slug']) }}" class="view-all-btn">পড়ুন &rarr;</a>
-                    </div>
-                </div>
-            {% endfor %}
+        <div class="link-icon" id="openLink" title="Open link">
+          <i class="fa-solid fa-link"></i>
         </div>
-    {% endif %}
 
-    <div class="section-header">
-        <span class="section-title">🕒 লেটেস্ট পোস্ট (নতুন ১০টি)</span>
-        <a href="/list?type=latest" class="view-all-btn">সব দেখুন</a>
+        <div class="arrow left" id="prev" aria-label="Previous">
+          <i class="fa-solid fa-chevron-left"></i>
+        </div>
+        <div class="arrow right" id="next" aria-label="Next">
+          <i class="fa-solid fa-chevron-right"></i>
+        </div>
+
+        <div class="dots" id="dots"></div>
+      </div>
+    </section>
+  {% endif %}
+
+  <main class="homeContent">
+    <div class="sectionHead">
+      <h2 class="sectionTitleHead">
+        <i class="fa-regular fa-clock"></i>
+        Latest
+      </h2>
+
+      <a class="viewAllLink" href="/list?type=latest">
+        View all
+        <i class="fa-solid fa-arrow-right"></i>
+      </a>
     </div>
 
-    <div style="display: grid; gap: 15px;">
-        {% for post in latest_posts %}
-            <div class="post" style="display: flex; gap: 15px; align-items: flex-start;">
-                {% if post['thumbnail'] %}
-                    <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" 
-                         style="width: 100px; height: 100px; object-fit: cover; flex-shrink: 0; border-radius: 8px;">
-                {% endif %}
+    <section class="latestList">
+      {% for post in latest_posts %}
+        <article class="latestCard">
+          <div class="thumb imgBox">
+            {% if post['thumbnail'] %}
+              <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" alt="{{ post['title'] }}">
+            {% else %}
+              <img src="https://picsum.photos/900/520?random={{ loop.index }}" alt="{{ post['title'] }}">
+            {% endif %}
+          </div>
 
-                <div>
-                    <span class="tag">{{ post['category'] }}</span>
-                    <h3 style="margin: 5px 0; font-size: 1.1rem;">{{ post['title'] }}</h3>
-                    <p style="font-size: 0.9em; color: #666; margin-bottom: 5px;">{{ post['intro'][:50] }}...</p>
-                    <small style="color: #888;">👁️ {{ post['views'] }} views • ⏱️ {{ post['read_time'] }} পড়া</small>
-                    <div class="author-row" style="margin-top: 6px;">
-                        <div class="author-avatar" style="width: 28px; height: 28px; font-size: 0.75rem;">
-                            {% if post['author_profile_pic'] %}
-                                <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="profile">
-                            {% else %}
-                                {{ post['author_display_name'][:1] }}
-                            {% endif %}
-                        </div>
-                        <a class="author-name" style="font-size: 0.85rem;" href="{{ url_for('public_profile', user_id=post['user_id']) }}">{{ post['author_display_name'] }}</a>
-                    </div>
-                    <a href="{{ url_for('post_detail', post_id=post['id'], slug=post['slug']) }}" style="font-size: 0.9em; color: #2563eb; text-decoration: none;">বিস্তারিত</a>
-                </div>
+          <div class="content">
+            <div class="badgeRow">
+              <span class="badge">Latest</span>
+              <span class="badge">{{ post['category'] }}</span>
             </div>
-        {% endfor %}
-    </div>
+            <h3 class="title">{{ post['title'] }}</h3>
+            <p class="excerpt">{{ post['intro'] }}</p>
+
+            <div class="metaRow">
+              <div class="metaLeft">
+                <div class="avatar imgBox">
+                  {% if post['author_profile_pic'] %}
+                    <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="{{ post['author_display_name'] }}">
+                  {% else %}
+                    <img src="https://ui-avatars.com/api/?name={{ post['author_display_name'] }}&background=f1f5f9&color=0f172a" alt="{{ post['author_display_name'] }}">
+                  {% endif %}
+                </div>
+                <div>
+                  <div class="author">{{ post['author_display_name'] }}</div>
+                  <div class="subMeta"><span>{{ post['short_date'] }}</span><span class="dotMini"></span><span>{{ post['read_time_en'] }}</span></div>
+                </div>
+              </div>
+              <div class="metaRight">
+                <div class="comments"><i class="fa-regular fa-eye"></i><span>{{ post['views'] }}</span></div>
+                <a class="bookmarkBtn" href="{{ url_for('post_detail', post_id=post['id'], slug=post['slug']) }}" aria-label="Read post">
+                  <i class="fa-solid fa-arrow-right"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </section>
 
     {% for section in category_sections %}
-        <div class="section-header">
-            <span class="section-title">📂 {{ section.name }}</span>
-            <a href="/list?type=category&category={{ section.name }}" class="view-all-btn">সব দেখুন</a>
+      <section class="loveSection">
+        <div class="catHeader">
+          <div class="catName">
+            <span>{{ section.name }}</span>
+            <span class="catPill">Trending</span>
+          </div>
+          <a class="catMore" href="/list?type=category&category={{ section.name }}">View all</a>
         </div>
-        <div style="display: grid; gap: 15px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
-            {% for post in section.posts %}
-                <div class="post" style="padding: 15px;">
-                    {% if post['thumbnail'] %}
-                        <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" 
-                             style="width: 100%; height: 150px; object-fit: cover; margin-bottom: 10px;">
-                    {% endif %}
-                    <h4 style="margin: 0 0 5px 0;">{{ post['title'] }}</h4>
-                    <small style="color: #888; display: block; margin-bottom: 5px;">👁️ {{ post['views'] }} views • ⏱️ {{ post['read_time'] }} পড়া</small>
-                    <div class="author-row" style="margin-top: 6px;">
-                        <div class="author-avatar" style="width: 28px; height: 28px; font-size: 0.75rem;">
-                            {% if post['author_profile_pic'] %}
-                                <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="profile">
-                            {% else %}
-                                {{ post['author_display_name'][:1] }}
-                            {% endif %}
-                        </div>
-                        <a class="author-name" style="font-size: 0.85rem;" href="{{ url_for('public_profile', user_id=post['user_id']) }}">{{ post['author_display_name'] }}</a>
-                    </div>
-                    <a href="{{ url_for('post_detail', post_id=post['id'], slug=post['slug']) }}" style="font-size: 0.85em; color: #2563eb; text-decoration: none;">পড়ুন &rarr;</a>
+
+        <div class="postRow">
+          {% for post in section.posts %}
+            <article class="postMini">
+              <a href="{{ url_for('post_detail', post_id=post['id'], slug=post['slug']) }}">
+                <div class="miniThumb imgBox">
+                  {% if post['thumbnail'] %}
+                    <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" alt="{{ post['title'] }}">
+                  {% else %}
+                    <img src="https://picsum.photos/800/450?random={{ loop.index }}" alt="{{ post['title'] }}">
+                  {% endif %}
                 </div>
-            {% endfor %}
+                <div class="miniBody">
+                  <div class="miniTitle">{{ post['title'] }}</div>
+                  <div class="miniDesc">{{ post['intro'] }}</div>
+                  <div class="miniMeta">
+                    <div class="miniLeft">
+                      <div class="miniAvatar imgBox">
+                        {% if post['author_profile_pic'] %}
+                          <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="{{ post['author_display_name'] }}">
+                        {% else %}
+                          <img src="https://ui-avatars.com/api/?name={{ post['author_display_name'] }}&background=f1f5f9&color=0f172a" alt="{{ post['author_display_name'] }}">
+                        {% endif %}
+                      </div>
+                      <div>
+                        <div class="miniAuthor">{{ post['author_display_name'] }}</div>
+                        <div class="sub"><span>{{ post['read_time_en'] }}</span><span class="miniDot"></span><span>{{ post['views'] }} views</span></div>
+                      </div>
+                    </div>
+                    <div class="miniRight"><i class="fa-regular fa-eye"></i><span>{{ post['views'] }}</span></div>
+                  </div>
+                </div>
+              </a>
+            </article>
+          {% endfor %}
         </div>
+      </section>
     {% endfor %}
 
-    <div class="section-header">
-        <span class="section-title">⭐ টপ ফাইভ রাইটার</span>
-        <a href="{{ url_for('writers_list') }}" class="view-all-btn">সব দেখুন</a>
-    </div>
+    <section class="topWriters">
+      <div class="writersHeader">
+        <div class="writersTitle">Top Writers</div>
+        <a class="writersViewAll" href="{{ url_for('writers_list') }}">View all</a>
+      </div>
 
-    <div style="display: grid; gap: 15px;">
+      <div class="writerRow" id="writerRow">
         {% for writer in top_writers %}
-            <div class="post" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-                <div class="author-row" style="margin-top: 0;">
-                    <div class="author-avatar">
-                        {% if writer['profile_pic'] %}
-                            <img src="{{ url_for('static', filename='profile_uploads/' + writer['profile_pic']) }}" alt="profile">
-                        {% else %}
-                            {{ writer['display_name'][:1] }}
-                        {% endif %}
-                    </div>
-                    <div>
-                        <a class="author-name" href="{{ url_for('public_profile', user_id=writer['id']) }}">{{ writer['display_name'] }}</a>
-                        <div class="author-meta">পোস্ট: {{ writer['post_count'] }} • ভিউ: {{ writer['total_views'] }}</div>
-                    </div>
-                </div>
-                <a href="{{ url_for('public_profile', user_id=writer['id']) }}" class="view-all-btn">প্রোফাইল</a>
-            </div>
+          <a class="writer imgBox" href="{{ url_for('public_profile', user_id=writer['id']) }}" title="{{ writer['display_name'] }}">
+            {% if writer['profile_pic'] %}
+              <img src="{{ url_for('static', filename='profile_uploads/' + writer['profile_pic']) }}" alt="{{ writer['display_name'] }}">
+            {% else %}
+              <img src="https://ui-avatars.com/api/?name={{ writer['display_name'] }}&background=f1f5f9&color=0f172a" alt="{{ writer['display_name'] }}">
+            {% endif %}
+          </a>
         {% else %}
-            <p style="text-align: center; color: #666;">কোনো রাইটার পাওয়া যায়নি।</p>
+          <p style="text-align: center; color: var(--muted);">No writers found.</p>
         {% endfor %}
-    </div>
+      </div>
 
+      <div class="scrollIndicator" id="scrollIndicator" aria-hidden="true">
+        <div class="scrollThumb" id="scrollThumb"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const carousel = document.getElementById("trendCarousel");
+    if (carousel) {
+      const images = document.querySelectorAll("#slides img");
+      const dotsBox = document.getElementById("dots");
+      const title = document.getElementById("slideTitle");
+      const openLink = document.getElementById("openLink");
+      let index = 0;
+
+      dotsBox.innerHTML = "";
+      images.forEach((_, i) => {
+        const d = document.createElement("div");
+        d.className = "dot" + (i === 0 ? " active" : "");
+        d.onclick = () => {
+          index = i;
+          update();
+        };
+        dotsBox.appendChild(d);
+      });
+
+      const dots = dotsBox.querySelectorAll(".dot");
+
+      function update() {
+        images.forEach((img, i) => img.classList.toggle("active", i === index));
+        dots.forEach((d, i) => d.classList.toggle("active", i === index));
+        const active = images[index];
+        if (active) {
+          title.textContent = active.dataset.title || "";
+        }
+      }
+
+      document.getElementById("next").onclick = () => {
+        index = (index + 1) % images.length;
+        update();
+      };
+      document.getElementById("prev").onclick = () => {
+        index = (index - 1 + images.length) % images.length;
+        update();
+      };
+      openLink.onclick = () => {
+        const active = images[index];
+        if (active && active.dataset.link) {
+          window.location.href = active.dataset.link;
+        }
+      };
+
+      setInterval(() => {
+        index = (index + 1) % images.length;
+        update();
+      }, 5000);
+      update();
+    }
+
+    function initWritersIndicator() {
+      const row = document.getElementById("writerRow");
+      const indicator = document.getElementById("scrollIndicator");
+      const thumb = document.getElementById("scrollThumb");
+      if (!row || !indicator || !thumb) return;
+
+      let rafId = null;
+
+      function sync() {
+        rafId = null;
+        const total = row.scrollWidth;
+        const view = row.clientWidth;
+        const maxScroll = total - view;
+
+        if (maxScroll <= 1) {
+          indicator.style.display = "none";
+          return;
+        }
+        indicator.style.display = "block";
+
+        const thumbWpx = Math.max(36, Math.round((view / total) * indicator.clientWidth));
+        thumb.style.width = thumbWpx + "px";
+
+        const trackW = indicator.clientWidth - thumbWpx;
+        const x = Math.round((row.scrollLeft / maxScroll) * trackW);
+        thumb.style.transform = `translateX(${x}px)`;
+      }
+
+      function requestSync() {
+        if (rafId) return;
+        rafId = requestAnimationFrame(sync);
+      }
+
+      row.addEventListener("scroll", requestSync, { passive: true });
+      window.addEventListener("resize", requestSync);
+      requestSync();
+    }
+
+    initWritersIndicator();
+  </script>
 {% endblock %}
