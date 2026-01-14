@@ -392,17 +392,94 @@
       margin-bottom:14px;
     }
 
-    .flash-msg{
-      background: rgba(250, 204, 21, .20);
-      border:1px solid rgba(250, 204, 21, .35);
-      padding: 10px;
-      margin: 12px 0;
-      border-radius: 14px;
-      text-align: center;
-      color: var(--text);
-      font-size: 13px;
-      font-weight: 600;
+    #flash-container{
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 90%;
+      max-width: 420px;
+      pointer-events: none;
     }
+
+    .flash-toast{
+      pointer-events: auto;
+      background: #ffffff;
+      padding: 14px 18px;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15), 0 4px 6px rgba(0,0,0,0.05);
+      border: 1px solid rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+      animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+
+    @keyframes slideDown {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeOut {
+      to { opacity: 0; transform: translateY(-10px) scale(0.95); }
+    }
+
+    .flash-icon{
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .flash-icon svg{ width: 22px; height: 22px; }
+
+    .flash-content{ flex: 1; }
+    .flash-title{ font-size: 14px; font-weight: 700; color: #0f172a; line-height: 1.2; }
+    .flash-msg{ font-size: 12px; font-weight: 400; color: #64748b; margin-top: 2px; }
+
+    .flash-close{
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: background 0.2s;
+    }
+    .flash-close:hover { background: #f1f5f9; color: #0f172a; }
+    .flash-close svg{ width: 16px; height: 16px; }
+
+    .flash-toast.success { border-left: 4px solid #22c55e; }
+    .flash-toast.success .flash-icon { color: #22c55e; }
+
+    .flash-toast.error { border-left: 4px solid #ef4444; }
+    .flash-toast.error .flash-icon { color: #ef4444; }
+
+    .flash-toast.warning { border-left: 4px solid #f59e0b; }
+    .flash-toast.warning .flash-icon { color: #f59e0b; }
+
+    .flash-toast.info { border-left: 4px solid #3b82f6; }
+    .flash-toast.info .flash-icon { color: #3b82f6; }
+
+    .flash-toast.delete {
+      border-left: 4px solid #f97316;
+      background: linear-gradient(135deg, rgba(15,23,42,0.95), rgba(30,41,59,0.95));
+      border-color: rgba(249,115,22,0.6);
+    }
+    .flash-toast.delete .flash-title{ color: #f8fafc; }
+    .flash-toast.delete .flash-msg{ color: #cbd5f5; }
+    .flash-toast.delete .flash-icon{ color: #f97316; }
+    .flash-toast.delete .flash-close:hover{ background: rgba(255,255,255,0.12); color: #fff; }
 
     /* Footer */
     .writoFooterWrap{max-width:520px;margin:0 auto;padding:0 14px 18px}
@@ -596,16 +673,41 @@
       </div>
     </section>
 
-    <!-- Main content -->
-    <main class="container">
-      {% with messages = get_flashed_messages() %}
+    <div id="flash-container" aria-live="polite" aria-atomic="true">
+      {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-          {% for message in messages %}
-            <div class="flash-msg">{{ message }}</div>
+          {% for category, message in messages %}
+            <div class="flash-toast {{ category or 'info' }}" role="status" data-flash-item>
+              <div class="flash-icon">
+                {% if category == 'success' %}
+                  <i data-lucide="check-circle-2"></i>
+                {% elif category == 'error' %}
+                  <i data-lucide="x-circle"></i>
+                {% elif category == 'warning' %}
+                  <i data-lucide="alert-triangle"></i>
+                {% elif category == 'delete' %}
+                  <i data-lucide="trash-2"></i>
+                {% else %}
+                  <i data-lucide="info"></i>
+                {% endif %}
+              </div>
+              <div class="flash-content">
+                <div class="flash-title">
+                  {% if category == 'success' %}Success{% elif category == 'error' %}Error{% elif category == 'warning' %}Warning{% elif category == 'delete' %}Deleted{% else %}Notice{% endif %}
+                </div>
+                <div class="flash-msg">{{ message }}</div>
+              </div>
+              <button class="flash-close" type="button" aria-label="Close notification" data-flash-close>
+                <i data-lucide="x"></i>
+              </button>
+            </div>
           {% endfor %}
         {% endif %}
       {% endwith %}
+    </div>
 
+    <!-- Main content -->
+    <main class="container">
       {% block content %}{% endblock %}
     </main>
 
@@ -638,6 +740,19 @@
 
   <script>
     lucide.createIcons();
+
+    const flashContainer = document.getElementById("flash-container");
+    if (flashContainer) {
+      flashContainer.querySelectorAll("[data-flash-item]").forEach(toast => {
+        const closeBtn = toast.querySelector("[data-flash-close]");
+        const removeToast = () => {
+          toast.style.animation = "fadeOut 0.3s forwards";
+          toast.addEventListener("animationend", () => toast.remove(), { once: true });
+        };
+        closeBtn?.addEventListener("click", removeToast);
+        setTimeout(removeToast, 4000);
+      });
+    }
 
     // visual viewport height updater (mobile keyboard safe)
     function updateVVH(){
