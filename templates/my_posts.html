@@ -1,50 +1,313 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="post">
-    <h1>আমার পোস্ট সমূহ</h1>
-    <a href="/create" class="sub-btn" style="text-decoration: none; display: inline-block; width: auto; margin-bottom: 20px;">➕ নতুন পোস্ট লিখুন</a>
+  <style>
+    .wrap{max-width:520px;margin:0 auto;padding:14px}
 
-    <table style="width: 100%; border-collapse: collapse;">
-        <thead>
-            <tr style="background: #f1f5f9;">
-                <th style="padding: 10px; text-align: left;">শিরোনাম</th>
-                <th style="padding: 10px;">স্ট্যাটাস</th>
-                <th style="padding: 10px;">অ্যাকশন</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for post in posts %}
-            <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 10px;">
-                    <strong>{{ post['title'] }}</strong>
-                </td>
-                <td style="padding: 10px; text-align: center;">
-                    {% if post['status'] == 'approved' %}
-                        <span style="color: green; font-weight: bold;">প্রকাশিত</span>
-                    {% elif post['status'] == 'pending' %}
-                        <span style="color: orange; font-weight: bold;">রিভিউ চলছে</span>
-                    {% elif post['status'] == 'rejected' %}
-                        <span style="color: red; font-weight: bold;">বাতিল</span>
-                    {% else %}
-                        <span style="color: gray; font-weight: bold;">খসড়া (Draft)</span>
-                    {% endif %}
-                </td>
-                <td style="padding: 10px; text-align: center;">
-                    <a href="/edit_post/{{ post['id'] }}" style="text-decoration: none;">✏️</a>
-                    <a href="/delete_user_post/{{ post['id'] }}" onclick="return confirm('মুছে ফেলতে চান?')" style="text-decoration: none; color: red;">🗑️</a>
-                    
-                    {% if post['status'] == 'approved' %}
-                        <a href="/toggle_active_user/{{ post['id'] }}" style="text-decoration: none; margin-left: 5px;">
-                            {% if post['is_active'] %} 🟢 {% else %} ⚫ {% endif %}
-                        </a>
-                    {% endif %}
-                </td>
-            </tr>
+    .writerSummary{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:18px;
+      box-shadow:0 6px 18px rgba(16,24,40,.04);
+      padding:14px;
+    }
+
+    .writerHead{
+      display:flex;
+      align-items:flex-start;
+      justify-content:flex-start;
+      gap:12px;
+      margin-bottom:10px;
+    }
+
+    .miniAvatar{
+      width:42px;height:42px;border-radius:999px;overflow:hidden;
+      border:1px solid var(--softBorder);
+      background: rgba(15,23,42,0.06);
+      flex:0 0 auto;
+    }
+    body[data-theme="dark"] .miniAvatar{background: rgba(255,255,255,0.06)}
+    .miniAvatar img{width:100%;height:100%;object-fit:cover;display:block}
+
+    .writerName{
+      font-size:14px;
+      font-weight:900;
+      letter-spacing:-0.2px;
+      line-height:1.15;
+      margin-top:2px;
+      word-break:break-word;
+    }
+
+    .writerBio{
+      margin-top:6px;
+      font-size:12px;
+      font-weight:300;
+      color:var(--muted);
+      line-height:1.6;
+      display:-webkit-box;
+      -webkit-line-clamp:3;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+    }
+
+    .writerIntro{
+      margin-top:10px;
+      border-top:1px solid var(--border);
+      padding-top:10px;
+      font-size:12px;
+      font-weight:300;
+      color:var(--muted);
+      line-height:1.55;
+    }
+
+    .btnRow{
+      margin-top:12px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      height:36px;padding:0 12px;border-radius:999px;
+      border:1px solid var(--softBorder);
+      background: rgba(255,255,255,0.35);
+      color:var(--text);
+      font-size:12px;font-weight:800;
+      cursor:pointer;
+      display:inline-flex;align-items:center;gap:8px;
+      user-select:none;
+      text-decoration:none;
+    }
+    body[data-theme="dark"] .btn{background: rgba(255,255,255,0.06)}
+    .btn:active{transform:scale(.98)}
+    .btn.primary{
+      background:#0f172a;color:#fff;border:1px solid rgba(15,23,42,0.30);
+    }
+    body[data-theme="dark"] .btn.primary{
+      background: rgba(255,255,255,0.14);
+      border:1px solid rgba(255,255,255,0.16);
+      color: var(--text);
+    }
+
+    .sectionTitle{
+      margin:14px 2px 10px;
+      font-size:12px;
+      font-weight:800;
+      color:var(--text);
+      letter-spacing:.15px;
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+    }
+    .sectionTitle small{font-weight:300;color:var(--muted)}
+
+    .statGrid{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    .statCard{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:18px;
+      box-shadow:0 6px 18px rgba(16,24,40,.04);
+      padding:12px;
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      min-width:0;
+    }
+    .statIcon{
+      width:34px;height:34px;border-radius:14px;
+      border:1px solid var(--softBorder);
+      background: rgba(15,23,42,0.06);
+      display:flex;align-items:center;justify-content:center;
+      flex:0 0 auto;
+    }
+    body[data-theme="dark"] .statIcon{background: rgba(255,255,255,0.06)}
+    .statIcon svg{width:18px;height:18px}
+    .statMeta{min-width:0}
+    .statValue{font-size:16px;font-weight:900;letter-spacing:-0.4px}
+    .statLabel{margin-top:4px;font-size:12px;font-weight:300;color:var(--muted)}
+    .statTrend{
+      margin-top:8px;
+      font-size:11px;
+      font-weight:800;
+      color:var(--muted);
+      display:inline-flex;
+      gap:6px;
+      align-items:center;
+      white-space:nowrap;
+    }
+    .dot{width:7px;height:7px;border-radius:999px;background: rgba(34,197,94,0.70);display:inline-block}
+    .dot.warn{background: rgba(245,158,11,0.75)}
+    .dot.bad{background: rgba(239,68,68,0.75)}
+
+    .postList{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .postRow{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .postHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+
+    .postTitle{
+      font-size:13px;
+      font-weight:800;
+      color:var(--text);
+    }
+
+    .statusPill{
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:800;
+      border:1px solid var(--softBorder);
+      background: var(--soft);
+    }
+
+    .statusPill.published{color:#16a34a;}
+    .statusPill.pending{color:#f59e0b;}
+    .statusPill.rejected{color:#ef4444;}
+    .statusPill.draft{color:#64748b;}
+
+    .postActions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+  </style>
+
+  <main class="wrap">
+    <section class="writerSummary">
+      <div class="writerHead">
+        <div style="display:flex; gap:12px; align-items:flex-start; min-width:0;">
+          <div class="miniAvatar">
+            {% if current_user.profile_pic %}
+              <img src="{{ url_for('static', filename='profile_uploads/' + current_user.profile_pic) }}" alt="{{ current_user.display_name }}">
             {% else %}
-                <tr><td colspan="3" style="text-align: center; padding: 20px;">আপনার কোনো পোস্ট নেই।</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+              <img src="https://ui-avatars.com/api/?name={{ current_user.display_name }}&background=0f172a&color=f8fafc" alt="{{ current_user.display_name }}">
+            {% endif %}
+          </div>
+          <div style="min-width:0;">
+            <div class="writerName">{{ current_user.display_name }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="writerBio">
+        {{ current_user.bio or 'Share your writing focus and a short bio in your profile.' }}
+      </div>
+
+      <div class="writerIntro">
+        Tip: Keep your posts consistent—thumbnail, title, short meta. Publish fast, iterate faster.
+      </div>
+
+      <div class="btnRow">
+        <a class="btn primary" href="/create">
+          <span data-lucide="plus"></span> Add Post
+        </a>
+      </div>
+    </section>
+
+    <div class="sectionTitle">
+      <span>Overview</span>
+      <small>Last 30 days</small>
+    </div>
+
+    <section class="statGrid">
+      <div class="statCard">
+        <div class="statIcon"><span data-lucide="file-text"></span></div>
+        <div class="statMeta">
+          <div class="statValue">{{ total_posts }}</div>
+          <div class="statLabel">Total posts</div>
+          <div class="statTrend"><span class="dot"></span><span>+{{ posts_last_30 }} this month</span></div>
+        </div>
+      </div>
+
+      <div class="statCard">
+        <div class="statIcon"><span data-lucide="eye"></span></div>
+        <div class="statMeta">
+          <div class="statValue">{{ total_views }}</div>
+          <div class="statLabel">Views</div>
+          <div class="statTrend"><span class="dot"></span><span>all time</span></div>
+        </div>
+      </div>
+
+      <div class="statCard">
+        <div class="statIcon"><span data-lucide="heart"></span></div>
+        <div class="statMeta">
+          <div class="statValue">{{ total_likes }}</div>
+          <div class="statLabel">Likes</div>
+          <div class="statTrend"><span class="dot warn"></span><span>steady</span></div>
+        </div>
+      </div>
+
+      <div class="statCard">
+        <div class="statIcon"><span data-lucide="message-circle"></span></div>
+        <div class="statMeta">
+          <div class="statValue">{{ total_comments }}</div>
+          <div class="statLabel">Comments</div>
+          <div class="statTrend"><span class="dot bad"></span><span>needs reply</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="sectionTitle" style="margin-top:18px;">
+      <span>Your Posts</span>
+      <small>Manage drafts and published posts</small>
+    </div>
+
+    <section class="postList">
+      {% for post in posts %}
+        <article class="postRow">
+          <div class="postHead">
+            <div class="postTitle">{{ post['title'] }}</div>
+            {% if post['status'] == 'approved' %}
+              <span class="statusPill published">Published</span>
+            {% elif post['status'] == 'pending' %}
+              <span class="statusPill pending">Pending</span>
+            {% elif post['status'] == 'rejected' %}
+              <span class="statusPill rejected">Rejected</span>
+            {% else %}
+              <span class="statusPill draft">Draft</span>
+            {% endif %}
+          </div>
+          <div class="postActions">
+            <a class="btn" href="/edit_post/{{ post['id'] }}">
+              <span data-lucide="pencil"></span> Edit
+            </a>
+            <a class="btn" href="/delete_user_post/{{ post['id'] }}" onclick="return confirm('মুছে ফেলতে চান?')">
+              <span data-lucide="trash-2"></span> Delete
+            </a>
+            {% if post['status'] == 'approved' %}
+              <a class="btn" href="/toggle_active_user/{{ post['id'] }}">
+                {% if post['is_active'] %}
+                  <span data-lucide="eye"></span> Hide
+                {% else %}
+                  <span data-lucide="eye"></span> Show
+                {% endif %}
+              </a>
+            {% endif %}
+          </div>
+        </article>
+      {% else %}
+        <div class="postRow">আপনার কোনো পোস্ট নেই।</div>
+      {% endfor %}
+    </section>
+  </main>
 {% endblock %}

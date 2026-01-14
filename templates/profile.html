@@ -1,66 +1,532 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="post">
-    <h1>প্রোফাইল ম্যানেজমেন্ট</h1>
-    <form method="post" enctype="multipart/form-data">
-        <label>পূর্ণ নাম</label>
-        <input type="text" name="name" value="{{ user['name'] or '' }}" placeholder="আপনার নাম">
+  <style>
+    .wrap{
+      --primary: #0f172a;
+      --primaryText: #ffffff;
+      --danger:#ef4444;
+    }
 
-        <label>ইমেইল</label>
-        <input type="email" name="email" value="{{ user['email'] or '' }}" required>
+    body[data-theme="dark"] .wrap{
+      --primary: #ffffff;
+      --primaryText: #0f172a;
+    }
 
-        <label>প্রোফাইল ছবি</label>
-        <input type="file" name="profile_pic" accept="image/*">
-        {% if user['profile_pic'] %}
-            <img src="{{ url_for('static', filename='profile_uploads/' + user['profile_pic']) }}" alt="profile" style="max-width: 120px; margin-top: 10px;">
-        {% endif %}
+    .wrap{max-width:680px;margin:0 auto;padding:14px}
 
-        <label>বায়ো</label>
-        <textarea name="bio" rows="3" placeholder="আপনার সম্পর্কে লিখুন">{{ user['bio'] or '' }}</textarea>
+    .headerArea {
+      margin-bottom: 20px;
+    }
+    .pageTitle {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .pageSub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 6px;
+      font-weight: 300;
+    }
 
-        <label>হবি (সর্বোচ্চ ৩টি সিলেক্ট করুন)</label>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px;">
-            {% for hobby in hobby_options %}
-                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem;">
-                    <input type="checkbox" name="hobby" value="{{ hobby }}" {% if hobby in selected_hobbies %}checked{% endif %}>
-                    {{ hobby }}
-                </label>
-            {% endfor %}
+    .panel{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:24px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.04);
+      overflow:hidden;
+      margin-bottom: 20px;
+    }
+
+    .panelBody{padding:24px}
+    @media(max-width:500px){ .panelBody{padding:16px} }
+
+    .profileHeader {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    @media(max-width:500px){ .profileHeader { flex-direction: column; text-align: center; } }
+
+    .avatarBox{
+      width:100px;height:100px;
+      border-radius:50%;
+      overflow:hidden;
+      border:3px solid var(--card);
+      box-shadow: 0 0 0 2px var(--softBorder);
+      background: rgba(15,23,42,0.06);
+      position:relative;
+      flex-shrink: 0;
+    }
+    body[data-theme="dark"] .avatarBox{background: rgba(255,255,255,0.06)}
+    .avatarBox img{width:100%;height:100%;object-fit:cover;display:block}
+
+    .avatarBadge{
+      position:absolute;
+      right:0;bottom:0;
+      width:32px;height:32px;border-radius:50%;
+      background: var(--primary);
+      color: var(--primaryText);
+      display:flex;align-items:center;justify-content:center;
+      border: 2px solid var(--card);
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .avatarBadge:hover { transform: scale(1.1); }
+    .avatarBadge svg { width: 14px; height: 14px; }
+
+    .avatarActions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .avatarTitle { font-weight: 700; font-size: 16px; margin-bottom: 2px; }
+    .avatarSub { font-size: 12px; color: var(--muted); font-weight: 300; }
+
+    .btnRow{display:flex;gap:10px;flex-wrap:wrap; margin-top: 10px;}
+    @media(max-width:500px){ .btnRow { justify-content: center; } }
+
+    .btn{
+      height:38px;
+      padding:0 16px;
+      border-radius:12px;
+      border:1px solid var(--softBorder);
+      background: var(--soft);
+      color:var(--text);
+      font-size:13px;
+      font-weight:600;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      transition: all 0.2s ease;
+      user-select:none;
+    }
+    .btn:hover { background: var(--softHover); border-color: var(--muted); }
+    .btn:active{transform:scale(.98)}
+
+    .btn.primary{
+      background:var(--primary);
+      color:var(--primaryText);
+      border:1px solid transparent;
+    }
+    .btn.primary:hover { opacity: 0.9; }
+
+    .btn.danger{
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.08);
+      border-color: rgba(239, 68, 68, 0.2);
+    }
+    .btn.danger:hover { background: rgba(239, 68, 68, 0.15); }
+
+    .grid{
+      display:grid;
+      gap:18px;
+    }
+    .twoCols{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:18px;
+    }
+    @media(max-width:500px){ .twoCols{grid-template-columns:1fr} }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .label{
+      font-size:12px;
+      font-weight:700;
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .label svg{width:14px;height:14px;color:var(--muted)}
+
+    .input, .textarea{
+      width:100%;
+      border-radius:12px;
+      border:1px solid var(--softBorder);
+      background: var(--bg);
+      padding:12px 14px;
+      font-family:inherit;
+      font-size:14px;
+      color:var(--text);
+      outline:none;
+      transition: border-color 0.2s;
+    }
+    .input:focus, .textarea:focus { border-color: var(--text); }
+    .textarea{min-height:100px;resize:vertical;line-height:1.6}
+
+    .countRow{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:11px;
+      font-weight:400;
+      color:var(--muted);
+      margin-top: -4px;
+    }
+
+    .selectionSection {
+      margin-top: 10px;
+      padding: 16px;
+      background: var(--soft);
+      border-radius: 16px;
+      border: 1px solid var(--softBorder);
+    }
+    .selectHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .selectLimit {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+      background: var(--card);
+      padding: 2px 8px;
+      border-radius: 99px;
+      border: 1px solid var(--softBorder);
+    }
+
+    .optionGrid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .optionChip {
+      padding: 8px 14px;
+      border-radius: 99px;
+      border: 1px solid var(--softBorder);
+      background: var(--card);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .optionChip:hover { border-color: var(--muted); }
+    .optionChip input{display:none}
+
+    .optionChip.selected {
+      background: var(--primary);
+      color: var(--primaryText);
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .optionChip.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .actionBar {
+      position: sticky;
+      bottom: 20px;
+      margin: 0 auto;
+      max-width: 680px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      border-radius: 16px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+      animation: slideUp 0.3s ease-out;
+    }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    .actionInfo { font-size: 13px; font-weight: 500; color: var(--muted); }
+
+    .toast{
+      position:fixed;
+      left:50%;
+      top: 20px;
+      transform:translateX(-50%) translateY(-20px);
+      padding:10px 20px;
+      border-radius:99px;
+      background: var(--primary);
+      color: var(--primaryText);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      z-index:2000;
+      opacity:0;
+      pointer-events:none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  </style>
+
+  <main class="wrap">
+    <div class="headerArea">
+      <div class="pageTitle"><span data-lucide="user-cog"></span> Manage Profile</div>
+      <div class="pageSub">Update your personal details and preferences.</div>
+    </div>
+
+    <form id="profileForm" method="post" enctype="multipart/form-data">
+      <section class="panel">
+        <div class="panelBody">
+          <div class="profileHeader">
+            <div class="avatarBox">
+              {% if user['profile_pic'] %}
+                <img id="avatarPreview" src="{{ url_for('static', filename='profile_uploads/' + user['profile_pic']) }}" alt="Avatar">
+              {% else %}
+                <img id="avatarPreview" src="https://ui-avatars.com/api/?name={{ user['name'] or user['email'] }}&background=0f172a&color=f8fafc" alt="Avatar">
+              {% endif %}
+              <label for="photoInput" class="avatarBadge" title="Change photo">
+                <span data-lucide="camera"></span>
+              </label>
+            </div>
+            <div class="avatarActions">
+              <div class="avatarTitle">Profile Picture</div>
+              <div class="avatarSub">Supports JPG, PNG (Max 2MB).</div>
+              <div class="btnRow">
+                <label for="photoInput" class="btn"><span data-lucide="upload"></span> Change</label>
+                <button type="button" class="btn danger" id="btnRemovePhoto"><span data-lucide="trash-2"></span> Remove</button>
+                <input id="photoInput" type="file" name="profile_pic" accept="image/*" hidden>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="field">
+              <div class="label"><span data-lucide="smile"></span> Display Name</div>
+              <input class="input" id="nameInput" type="text" name="name" value="{{ user['name'] or '' }}" placeholder="e.g. Shahariar Mahfuz">
+            </div>
+
+            <div class="field">
+              <div class="label"><span data-lucide="mail"></span> Email</div>
+              <input class="input" id="emailInput" type="email" name="email" value="{{ user['email'] or '' }}" placeholder="you@example.com" required>
+            </div>
+
+            <div class="field">
+              <div class="label"><span data-lucide="align-left"></span> Bio</div>
+              <textarea class="textarea" id="bioInput" maxlength="260" name="bio" placeholder="Tell us a little bit about yourself...">{{ user['bio'] or '' }}</textarea>
+              <div class="countRow">
+                <span>Publicly visible</span>
+                <span id="bioCount">0/260</span>
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
 
-        <label>ক্যাটাগরি (সর্বোচ্চ ৩টি সিলেক্ট করুন)</label>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px;">
-            {% for category in category_options %}
-                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem;">
+      <section class="panel">
+        <div class="panelBody">
+          <div class="label" style="font-size:15px; margin-bottom: 6px;">Interests &amp; Skills</div>
+          <div class="pageSub" style="margin-bottom: 16px;">Select items to display on your profile.</div>
+
+          <div class="field">
+            <div class="label"><span data-lucide="layout-grid"></span> Top Categories</div>
+            <div class="selectionSection">
+              <div class="selectHeader">
+                <span>Choose categories</span>
+                <span class="selectLimit" id="catLimitText">0/3 Selected</span>
+              </div>
+              <div class="optionGrid" id="catGrid">
+                {% for category in category_options %}
+                  <label class="optionChip" data-type="category">
                     <input type="checkbox" name="categories" value="{{ category }}" {% if category in selected_categories %}checked{% endif %}>
-                    {{ category }}
-                </label>
-            {% endfor %}
+                    <span>{{ category }}</span>
+                    <span data-lucide="check"></span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <div style="height: 10px;"></div>
+
+          <div class="field">
+            <div class="label"><span data-lucide="sparkles"></span> Hobbies</div>
+            <div class="selectionSection">
+              <div class="selectHeader">
+                <span>Choose hobbies</span>
+                <span class="selectLimit" id="hobbyLimitText">0/3 Selected</span>
+              </div>
+              <div class="optionGrid" id="hobbyGrid">
+                {% for hobby in hobby_options %}
+                  <label class="optionChip" data-type="hobby">
+                    <input type="checkbox" name="hobby" value="{{ hobby }}" {% if hobby in selected_hobbies %}checked{% endif %}>
+                    <span>{{ hobby }}</span>
+                    <span data-lucide="check"></span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
 
-        <label>ফেসবুক লিংক</label>
-        <input type="url" name="facebook_link" value="{{ user['facebook_link'] or '' }}" placeholder="https://facebook.com/username">
+      <section class="panel">
+        <div class="panelBody">
+          <div class="label" style="font-size:15px; margin-bottom: 16px;">Social Links</div>
+          <div class="twoCols">
+            <div class="field">
+              <div class="label"><span data-lucide="facebook"></span> Facebook</div>
+              <input class="input" id="fbInput" type="url" name="facebook_link" value="{{ user['facebook_link'] or '' }}" placeholder="https://facebook.com/...">
+            </div>
+            <div class="field">
+              <div class="label"><span data-lucide="twitter"></span> X (Twitter)</div>
+              <input class="input" id="xInput" type="url" name="x_link" value="{{ user['x_link'] or '' }}" placeholder="https://x.com/...">
+            </div>
+            <div class="field">
+              <div class="label"><span data-lucide="instagram"></span> Instagram</div>
+              <input class="input" id="igInput" type="url" name="instagram_link" value="{{ user['instagram_link'] or '' }}" placeholder="https://instagram.com/...">
+            </div>
+            <div class="field">
+              <div class="label"><span data-lucide="youtube"></span> YouTube</div>
+              <input class="input" id="ytInput" type="url" name="youtube_link" value="{{ user['youtube_link'] or '' }}" placeholder="https://youtube.com/...">
+            </div>
+            <div class="field">
+              <div class="label"><span data-lucide="globe"></span> Website</div>
+              <input class="input" id="webInput" type="url" name="website_link" value="{{ user['website_link'] or '' }}" placeholder="https://example.com">
+            </div>
+          </div>
+        </div>
+      </section>
 
-        <label>নিজস্ব ওয়েবসাইট</label>
-        <input type="url" name="website_link" value="{{ user['website_link'] or '' }}" placeholder="https://example.com">
+      <section class="panel">
+        <div class="panelBody">
+          <div class="label" style="font-size:15px; margin-bottom: 16px;">Password Update</div>
+          <div class="twoCols">
+            <div class="field">
+              <div class="label"><span data-lucide="lock"></span> Current Password</div>
+              <input class="input" type="password" name="current_password" placeholder="Current password">
+            </div>
+            <div class="field">
+              <div class="label"><span data-lucide="key"></span> New Password</div>
+              <input class="input" type="password" name="new_password" placeholder="New password">
+            </div>
+            <div class="field">
+              <div class="label"><span data-lucide="shield-check"></span> Confirm Password</div>
+              <input class="input" type="password" name="confirm_password" placeholder="Confirm password">
+            </div>
+          </div>
+        </div>
+      </section>
 
-        <label>ইউটিউব লিংক</label>
-        <input type="url" name="youtube_link" value="{{ user['youtube_link'] or '' }}" placeholder="https://youtube.com/@channel">
-
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-
-        <h3>পাসওয়ার্ড আপডেট</h3>
-        <label>বর্তমান পাসওয়ার্ড</label>
-        <input type="password" name="current_password" placeholder="বর্তমান পাসওয়ার্ড">
-
-        <label>নতুন পাসওয়ার্ড</label>
-        <input type="password" name="new_password" placeholder="নতুন পাসওয়ার্ড">
-
-        <label>নতুন পাসওয়ার্ড নিশ্চিত করুন</label>
-        <input type="password" name="confirm_password" placeholder="নতুন পাসওয়ার্ড আবার লিখুন">
-
-        <button type="submit" class="sub-btn" style="margin-top: 10px;">সেভ করুন</button>
+      <div class="actionBar">
+        <div class="actionInfo">Unsaved changes</div>
+        <div class="btnRow" style="margin-top:0">
+          <button type="button" class="btn" id="btnPreview"><span data-lucide="eye"></span> Preview</button>
+          <button type="submit" class="btn primary" id="btnSave"><span data-lucide="check"></span> Save Changes</button>
+        </div>
+      </div>
     </form>
-</div>
+  </main>
+
+  <div class="toast" id="toast">
+    <span data-lucide="check-circle-2"></span>
+    <span id="toastText">Saved successfully</span>
+  </div>
+
+  <script>
+    const bioInput = document.getElementById("bioInput");
+    const bioCount = document.getElementById("bioCount");
+    const catLimitText = document.getElementById("catLimitText");
+    const hobbyLimitText = document.getElementById("hobbyLimitText");
+    const toast = document.getElementById("toast");
+    const toastText = document.getElementById("toastText");
+    const photoInput = document.getElementById("photoInput");
+    const avatarPreview = document.getElementById("avatarPreview");
+
+    function updateCount(){
+      if (!bioCount || !bioInput) return;
+      bioCount.textContent = `${(bioInput.value || "").length}/260`;
+    }
+
+    function updateSelectionUI(type){
+      const chips = Array.from(document.querySelectorAll(`.optionChip[data-type="${type}"]`));
+      const selected = chips.filter(chip => chip.querySelector("input")?.checked);
+      chips.forEach(chip => {
+        const input = chip.querySelector("input");
+        const isSelected = input?.checked;
+        chip.classList.toggle("selected", Boolean(isSelected));
+      });
+      chips.forEach(chip => {
+        const input = chip.querySelector("input");
+        const isSelected = input?.checked;
+        const shouldDisable = !isSelected && selected.length >= 3;
+        chip.classList.toggle("disabled", shouldDisable);
+        if (input) input.disabled = shouldDisable;
+      });
+      if (type === "category" && catLimitText) {
+        catLimitText.textContent = `${selected.length}/3 Selected`;
+      }
+      if (type === "hobby" && hobbyLimitText) {
+        hobbyLimitText.textContent = `${selected.length}/3 Selected`;
+      }
+    }
+
+    document.querySelectorAll(".optionChip input").forEach(input => {
+      input.addEventListener("change", () => {
+        const type = input.closest(".optionChip")?.dataset.type;
+        if (type) updateSelectionUI(type);
+      });
+    });
+
+    updateCount();
+    updateSelectionUI("category");
+    updateSelectionUI("hobby");
+
+    bioInput?.addEventListener("input", updateCount);
+
+    photoInput?.addEventListener("change", () => {
+      const file = photoInput.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        avatarPreview.src = reader.result;
+        showToast("Photo updated!");
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById("btnRemovePhoto")?.addEventListener("click", () => {
+      avatarPreview.src = "https://ui-avatars.com/api/?name={{ user['name'] or user['email'] }}&background=0f172a&color=f8fafc";
+      photoInput.value = "";
+      showToast("Photo removed");
+    });
+
+    document.getElementById("btnPreview")?.addEventListener("click", () => {
+      const selectedCategories = Array.from(document.querySelectorAll(".optionChip[data-type='category'] input:checked")).map(i => i.value);
+      const selectedHobbies = Array.from(document.querySelectorAll(".optionChip[data-type='hobby'] input:checked")).map(i => i.value);
+      const previewData = {
+        name: document.getElementById("nameInput")?.value,
+        email: document.getElementById("emailInput")?.value,
+        bio: bioInput?.value,
+        categories: selectedCategories,
+        hobbies: selectedHobbies
+      };
+      alert("Preview:\n\n" + JSON.stringify(previewData, null, 2));
+    });
+
+    function showToast(message){
+      if (!toast || !toastText) return;
+      toastText.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2000);
+    }
+  </script>
 {% endblock %}

@@ -1,36 +1,220 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="post">
-    <h1>পেন্ডিং পোস্ট রিভিউ</h1>
-    <table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
-        {% for post in pending_posts %}
-        <tr style="border-bottom: 1px solid #eee;">
-            <td style="padding: 12px 10px;">
-                <strong>{{ post['title'] }}</strong> <br>
-                <div class="author-row">
-                    <div class="author-avatar">
-                        {% if post['author_profile_pic'] %}
-                            <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="profile">
-                        {% else %}
-                            {{ post['author_display_name'][:1] }}
-                        {% endif %}
-                    </div>
-                    <div>
-                        <div class="author-name">{{ post['author_display_name'] }}</div>
-                        <div class="author-meta">⏱️ {{ post['read_time'] }} পড়া</div>
-                    </div>
+<style>
+  .wrap{max-width:980px;margin:0 auto;padding:14px}
+  @media(max-width:1020px){ .wrap{max-width:520px} }
+
+  .pageTop{
+    background:var(--card);border:1px solid var(--border);border-radius:18px;
+    box-shadow:0 6px 18px rgba(16,24,40,.04);padding:14px;display:flex;
+    align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  }
+  .titleBox{min-width:0}
+  .title{font-size:14px;font-weight:900;letter-spacing:-0.2px;line-height:1.1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .title small{font-size:11px;font-weight:900;color:var(--muted);letter-spacing:.2px;}
+  .sub{margin-top:6px;font-size:12px;font-weight:300;color:var(--muted);line-height:1.55;max-width:720px;}
+
+  .sectionTitle{margin:14px 2px 10px;font-size:12px;font-weight:900;letter-spacing:.15px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .sectionTitle small{font-weight:300;color:var(--muted)}
+
+  .grid{margin-top:10px;display:grid;grid-template-columns: 1fr 1fr;gap:12px;}
+  @media(max-width:1020px){ .grid{grid-template-columns:1fr} }
+
+  .postCard{
+    background:var(--card);border:1px solid var(--border);border-radius:18px;
+    box-shadow:0 6px 18px rgba(16,24,40,.04);overflow:hidden;display:flex;flex-direction:column;
+  }
+  .banner{position:relative;width:100%;aspect-ratio: 16 / 9;background: rgba(15,23,42,0.06);border-bottom:1px solid var(--border);overflow:hidden;}
+  body[data-theme="dark"] .banner{background: rgba(255,255,255,0.06)}
+  .banner img{width:100%;height:100%;object-fit:cover;display:block;transform: scale(1.02);}
+  .bannerShade{position:absolute; inset:0;background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.0) 58%);pointer-events:none;}
+  .bannerMeta{position:absolute;left:12px;right:12px;bottom:10px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;}
+  .bannerTitle{color:#fff;font-weight:900;font-size:13px;letter-spacing:-0.2px;line-height:1.25;text-shadow: 0 10px 24px rgba(0,0,0,0.45);max-width: 78%;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .badge{font-size:11px;font-weight:900;color: rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.22);background: rgba(0,0,0,0.28);padding:4px 8px;border-radius:999px;white-space:nowrap;backdrop-filter: blur(8px);-webkit-backdrop-filter: blur(8px);flex:0 0 auto;}
+
+  .postBody{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+  .postInfo{font-size:11px;font-weight:300;color:var(--muted);line-height:1.55;}
+
+  .bottomRow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .writerLeft{display:flex;align-items:center;gap:10px;min-width:0;flex:1 1 auto;}
+  .avatar{width:44px;height:44px;border-radius:16px;border:1px solid var(--softBorder);background: rgba(15,23,42,0.06);overflow:hidden;flex:0 0 auto;display:flex;align-items:center;justify-content:center;}
+  body[data-theme="dark"] .avatar{background: rgba(255,255,255,0.06)}
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+
+  .writerMeta{min-width:0}
+  .writerName{font-size:12px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;}
+  .writerSmall{margin-top:4px;font-size:11px;font-weight:300;color:var(--muted);line-height:1.4;}
+
+  .btnRow{display:grid;grid-template-columns: 1fr 1fr 1fr;gap:10px;width: 320px;max-width:100%;flex:0 0 auto;}
+  @media(max-width:520px){
+    .btnRow{width:100%;grid-template-columns: 1fr 1fr;}
+    .btnRow .previewBtn{grid-column:1 / -1}
+  }
+
+  .miniBtn{
+    height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--softBorder);
+    background: rgba(255,255,255,0.35);color:var(--text);font-size:12px;font-weight:900;
+    cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;user-select:none;text-decoration:none;width:100%;
+  }
+  body[data-theme="dark"] .miniBtn{background: rgba(255,255,255,0.06)}
+  .miniBtn:hover{background:var(--softHover)}
+  .miniBtn:active{transform:scale(.98)}
+  .miniBtn.reject{border-color: rgba(239,68,68,0.35)}
+  .miniBtn.reject:hover{background: rgba(239,68,68,0.12)}
+  .miniBtn.approve{border-color: rgba(34,197,94,0.35)}
+  .miniBtn.approve:hover{background: rgba(34,197,94,0.12)}
+
+  .toastWrap{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);width:min(520px, calc(100vw - 22px));z-index:2200;pointer-events:none;}
+  .toast{
+    background: rgba(255,255,255,0.78);backdrop-filter: blur(14px) saturate(140%);-webkit-backdrop-filter: blur(14px) saturate(140%);
+    border:1px solid rgba(255,255,255,0.35);border-radius:18px;box-shadow: 0 18px 50px rgba(0,0,0,0.15);
+    padding:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;opacity:0;transform: translateY(10px);
+    transition: .16s ease;pointer-events:auto;
+  }
+  body[data-theme="dark"] .toast{background: rgba(10,10,10,0.70);border:1px solid rgba(255,255,255,0.14);box-shadow: 0 20px 60px rgba(0,0,0,0.55);}
+  .toast.open{opacity:1; transform: translateY(0)}
+  .toastLeft{display:flex;align-items:flex-start;gap:10px;min-width:0}
+  .toastIcon{width:38px;height:38px;border-radius:14px;border:1px solid var(--softBorder);background: rgba(15,23,42,0.06);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  body[data-theme="dark"] .toastIcon{background: rgba(255,255,255,0.06)}
+  .toastIcon svg{width:18px;height:18px}
+  .toastMeta{min-width:0}
+  .toastTitle{font-size:12px;font-weight:900;line-height:1.25}
+  .toastDesc{margin-top:4px;font-size:11px;font-weight:300;color:var(--muted);line-height:1.45}
+  .toastActions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+  .toastBtn{
+    height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--softBorder);
+    background: rgba(255,255,255,0.35);color:var(--text);font-size:12px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:8px;user-select:none;
+  }
+  body[data-theme="dark"] .toastBtn{background: rgba(255,255,255,0.06)}
+  .toastBtn:active{transform:scale(.98)}
+  .toastBtn.danger{border-color: rgba(239,68,68,0.35)}
+  .toastBtn.danger:hover{background: rgba(239,68,68,0.12)}
+  .toastBtn.ghost:hover{background:var(--softHover)}
+
+  .emptyCard{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:0 6px 18px rgba(16,24,40,.04);padding:16px;color:var(--muted);}
+</style>
+
+<main class="wrap">
+  <section class="pageTop">
+    <div class="titleBox">
+      <div class="title">
+        Post Approval <small>ADMIN ONLY</small>
+      </div>
+      <div class="sub">
+        এখানে pending পোস্টগুলো থাকবে—Preview বাটন আপনাকে আলাদা Preview পেজে নিয়ে যাবে। Reject করলে Confirmation toast আসবে, Approve ক্লিক করলে সাথে সাথে approve হবে।
+      </div>
+    </div>
+  </section>
+
+  <div class="sectionTitle">
+    <span>Pending Posts</span>
+    <small id="pendingCount">{{ pending_posts | length }} items</small>
+  </div>
+
+  {% if pending_posts %}
+    <section class="grid" id="postGrid">
+      {% for post in pending_posts %}
+        <article class="postCard" data-post-title="{{ post['title'] }}">
+          <div class="banner">
+            {% if post['thumbnail'] %}
+              <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" alt="post banner" />
+            {% else %}
+              <img src="https://images.unsplash.com/photo-1526378722484-bd91ca387e72?auto=format&fit=crop&w=1200&q=60" alt="post banner" />
+            {% endif %}
+            <div class="bannerShade"></div>
+            <div class="bannerMeta">
+              <div class="bannerTitle">{{ post['title'] }}</div>
+              <div class="badge">{{ post['category'] }}</div>
+            </div>
+          </div>
+
+          <div class="postBody">
+            <div class="postInfo">{{ post['intro'] }}</div>
+
+            <div class="bottomRow">
+              <div class="writerLeft">
+                <div class="avatar">
+                  {% if post['author_profile_pic'] %}
+                    <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="writer avatar" />
+                  {% else %}
+                    <span>{{ post['author_display_name'][:1] }}</span>
+                  {% endif %}
                 </div>
-            </td>
-            <td style="text-align: right; padding: 12px 10px;">
-                <a href="/preview/{{ post['id'] }}" target="_blank" style="color: #2563eb;">👁️ প্রিভিউ</a>
-                <a href="/admin_action_post/{{ post['id'] }}/approve" style="color: green; margin-left: 10px;">✅ Approve</a>
-                <a href="/admin_action_post/{{ post['id'] }}/reject" style="color: red; margin-left: 10px;">❌ Reject</a>
-            </td>
-        </tr>
-        {% else %}
-            <tr><td colspan="2">কোনো পেন্ডিং পোস্ট নেই।</td></tr>
-        {% endfor %}
-    </table>
+                <div class="writerMeta">
+                  <div class="writerName">{{ post['author_display_name'] }}</div>
+                  <div class="writerSmall">{{ post['short_date'] }} • {{ post['read_time'] }} পড়া</div>
+                </div>
+              </div>
+
+              <div class="btnRow">
+                <a class="miniBtn previewBtn" href="{{ url_for('admin_preview', post_id=post['id']) }}" target="_blank">
+                  <span data-lucide="eye"></span> Preview
+                </a>
+
+                <button class="miniBtn reject" type="button" data-action="reject" data-url="{{ url_for('admin_action_post', post_id=post['id'], action='reject') }}" data-title="{{ post['title'] }}">
+                  <span data-lucide="x-circle"></span> Reject
+                </button>
+
+                <a class="miniBtn approve" href="{{ url_for('admin_action_post', post_id=post['id'], action='approve') }}">
+                  <span data-lucide="check-circle-2"></span> Approve
+                </a>
+              </div>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+  {% else %}
+    <div class="emptyCard">কোনো পেন্ডিং পোস্ট নেই।</div>
+  {% endif %}
+</main>
+
+<div class="toastWrap" aria-live="polite" aria-atomic="true">
+  <div class="toast" id="toast">
+    <div class="toastLeft">
+      <div class="toastIcon"><span data-lucide="shield-alert"></span></div>
+      <div class="toastMeta">
+        <div class="toastTitle" id="toastTitle">Reject this post?</div>
+        <div class="toastDesc" id="toastDesc">এই পোস্টটি রিজেক্ট করলে এটি queue থেকে সরিয়ে দেওয়া হবে।</div>
+      </div>
+    </div>
+    <div class="toastActions">
+      <button class="toastBtn ghost" id="toastCancel" type="button">
+        <span data-lucide="x"></span> Cancel
+      </button>
+      <a class="toastBtn danger" id="toastConfirm" href="#">
+        <span data-lucide="x-circle"></span> Reject
+      </a>
+    </div>
+  </div>
 </div>
+
+<script>
+  const toast = document.getElementById("toast");
+  const toastDesc = document.getElementById("toastDesc");
+  const toastCancel = document.getElementById("toastCancel");
+  const toastConfirm = document.getElementById("toastConfirm");
+
+  function openToast(title, url){
+    toastDesc.textContent = `"${title}" রিজেক্ট করতে চান? (Confirm করলে পোস্টটি queue থেকে চলে যাবে)`;
+    toastConfirm.setAttribute("href", url);
+    toast.classList.add("open");
+  }
+
+  function closeToast(){
+    toast.classList.remove("open");
+    toastConfirm.setAttribute("href", "#");
+  }
+
+  toastCancel.addEventListener("click", closeToast);
+  window.addEventListener("keydown", (e)=>{ if(e.key === "Escape") closeToast(); });
+
+  document.addEventListener("click", (e)=>{
+    const btn = e.target.closest("[data-action='reject']");
+    if(!btn) return;
+    e.preventDefault();
+    openToast(btn.dataset.title, btn.dataset.url);
+  });
+</script>
 {% endblock %}

@@ -1,17 +1,349 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="post">
-    <h1>স্ট্যাটাস অফ ওয়েব</h1>
-    <div style="display: grid; gap: 12px; margin-top: 15px;">
-        <div><strong>মোট ভিউ:</strong> {{ total_views }}</div>
-        <div><strong>আজকের নতুন ইউজার:</strong> {{ new_users_today }}</div>
-        <div><strong>মোট ইউজার:</strong> {{ total_users }}</div>
-        <div><strong>আপটাইম:</strong> {{ uptime_hours }} ঘণ্টা {{ uptime_minutes }} মিনিট</div>
-        <div><strong>আজকের এরর:</strong> {{ errors_today }}</div>
-        <div><strong>আজকের নতুন পোস্ট:</strong> {{ new_posts_today }}</div>
-        <div><strong>মোট পোস্ট:</strong> {{ total_posts }}</div>
-        <div><strong>এভারেজ সাইটে থাকা সময়:</strong> প্রায় {{ avg_read_time_minutes }} মিনিট</div>
+<style>
+  .wrap{max-width:980px;margin:0 auto;padding:14px}
+  @media(max-width:1020px){ .wrap{max-width:520px} }
+
+  .hero{
+    background:var(--card);border:1px solid var(--border);border-radius:18px;
+    box-shadow:0 6px 18px rgba(16,24,40,.04);padding:14px;
+  }
+  .heroTop{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;}
+  .title{font-size:14px;font-weight:900;letter-spacing:-0.2px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .sub{margin-top:6px;font-size:12px;font-weight:300;color:var(--muted);line-height:1.55;}
+
+  .chipRow{display:flex;gap:10px;flex-wrap:wrap}
+  .chip{
+    height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--softBorder);
+    background: rgba(255,255,255,0.35);color:var(--text);font-size:12px;font-weight:900;
+    cursor:pointer;display:inline-flex;align-items:center;gap:8px;user-select:none;
+  }
+  body[data-theme="dark"] .chip{background: rgba(255,255,255,0.06)}
+  .chip:active{transform:scale(.98)}
+  .chip.primary{background:#0f172a;color:#fff;border:1px solid rgba(15,23,42,0.30);}
+  body[data-theme="dark"] .chip.primary{background: rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.16);color: var(--text);}
+
+  .cards{margin-top:12px;display:grid;grid-template-columns: repeat(4, 1fr);gap:12px;}
+  @media(max-width:1020px){ .cards{grid-template-columns:1fr 1fr} }
+  @media(max-width:520px){ .cards{grid-template-columns:1fr} }
+
+  .card{
+    background:var(--card);border:1px solid var(--border);border-radius:18px;
+    box-shadow:0 6px 18px rgba(16,24,40,.04);padding:12px;display:flex;gap:10px;
+    align-items:flex-start;min-width:0;
+  }
+
+  .iconBox{
+    width:34px;height:34px;border-radius:14px;border:1px solid var(--softBorder);
+    background: rgba(15,23,42,0.06);display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+  }
+  body[data-theme="dark"] .iconBox{background: rgba(255,255,255,0.06)}
+  .iconBox svg{width:18px;height:18px}
+
+  .val{font-size:16px;font-weight:900;letter-spacing:-0.4px}
+  .lab{margin-top:4px;font-size:12px;font-weight:300;color:var(--muted);line-height:1.3}
+
+  .panel{margin-top:12px;background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:0 6px 18px rgba(16,24,40,.04);overflow:hidden;}
+  .panelHead{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;background: rgba(255,255,255,0.20);flex-wrap:wrap;}
+  body[data-theme="dark"] .panelHead{background: rgba(255,255,255,0.04)}
+  .panelTitle{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:900;}
+  .panelTitle svg{width:18px;height:18px}
+
+  .miniBtn{
+    height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--softBorder);
+    background: rgba(255,255,255,0.35);color:var(--text);font-size:12px;font-weight:900;
+    cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+  }
+  body[data-theme="dark"] .miniBtn{background: rgba(255,255,255,0.06)}
+  .miniBtn:active{transform:scale(.98)}
+
+  .panelBody{padding:12px 14px}
+
+  .kvGrid{display:grid;grid-template-columns: 1fr 1fr;gap:12px;}
+  @media(max-width:520px){ .kvGrid{grid-template-columns:1fr} }
+
+  .kv{border:1px solid var(--border);border-radius:16px;padding:12px;background: rgba(255,255,255,0.20);}
+  body[data-theme="dark"] .kv{background: rgba(255,255,255,0.04)}
+  .k{font-size:11px;font-weight:900;color:var(--muted);letter-spacing:.15px}
+  .v{margin-top:6px;font-size:13px;font-weight:900}
+  .s{margin-top:6px;font-size:12px;font-weight:300;color:var(--muted);line-height:1.5}
+
+  .statusRow{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .badge{
+    height:30px;padding:0 10px;border-radius:999px;border:1px solid var(--softBorder);
+    background: rgba(255,255,255,0.35);font-size:11px;font-weight:900;color:var(--text);
+    display:inline-flex;align-items:center;gap:8px;white-space:nowrap;
+  }
+  body[data-theme="dark"] .badge{background: rgba(255,255,255,0.06)}
+  .dot{width:7px;height:7px;border-radius:999px;background: rgba(34,197,94,.8)}
+  .dot.warn{background: rgba(245,158,11,.8)}
+  .dot.bad{background: rgba(239,68,68,.85)}
+</style>
+
+<main class="wrap" id="statusApp"
+  data-total-views="{{ total_views }}"
+  data-total-posts="{{ total_posts }}"
+  data-total-users="{{ total_users }}"
+  data-errors="{{ errors_today }}"
+  data-new-users="{{ new_users_today }}"
+  data-new-posts="{{ new_posts_today }}"
+  data-uptime-hours="{{ uptime_hours }}"
+  data-uptime-minutes="{{ uptime_minutes }}"
+  data-avg-time="{{ avg_read_time_minutes }}">
+  <section class="hero">
+    <div class="heroTop">
+      <div style="min-width:0">
+        <div class="title"><span data-lucide="activity"></span> Status of Web</div>
+        <div class="sub">Website performance overview, total views, traffic signals and system status.</div>
+      </div>
+
+      <div class="chipRow">
+        <button class="chip" id="btnRefresh" type="button"><span data-lucide="refresh-ccw"></span> Refresh</button>
+        <button class="chip" id="btnExport" type="button"><span data-lucide="download"></span> Export</button>
+        <button class="chip primary" id="btnSimulate" type="button"><span data-lucide="sparkles"></span> Simulate</button>
+      </div>
     </div>
-</div>
+
+    <div class="statusRow" aria-label="Live status">
+      <div class="badge" title="Uptime"><span class="dot" id="dotUptime"></span><span id="uptimeLabel">Online</span></div>
+      <div class="badge" title="Server Load"><span class="dot warn" id="dotLoad"></span><span id="loadLabel">Medium load</span></div>
+      <div class="badge" title="Errors"><span class="dot" id="dotErr"></span><span id="errLabel">Low errors</span></div>
+      <div class="badge" title="Last update"><span data-lucide="clock"></span><span id="lastUpdate">Just now</span></div>
+    </div>
+  </section>
+
+  <section class="cards" aria-label="Top metrics">
+    <div class="card">
+      <div class="iconBox"><span data-lucide="eye"></span></div>
+      <div>
+        <div class="val" id="mViews">0</div>
+        <div class="lab">Total views</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="iconBox"><span data-lucide="users"></span></div>
+      <div>
+        <div class="val" id="mVisitors">0</div>
+        <div class="lab">Total users</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="iconBox"><span data-lucide="file-text"></span></div>
+      <div>
+        <div class="val" id="mPosts">0</div>
+        <div class="lab">Total posts</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="iconBox"><span data-lucide="mouse-pointer-click"></span></div>
+      <div>
+        <div class="val" id="mCtr">0%</div>
+        <div class="lab">CTR (demo)</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panelHead">
+      <div class="panelTitle"><span data-lucide="info"></span> Details</div>
+      <button class="miniBtn" id="btnToggle" type="button"><span data-lucide="chevrons-up-down"></span> Toggle details</button>
+    </div>
+
+    <div class="panelBody" id="detailsBody">
+      <div class="kvGrid">
+        <div class="kv">
+          <div class="k">LAST 24H</div>
+          <div class="v" id="d24hViews">0 views</div>
+          <div class="s">Traffic in the last 24 hours (estimate).</div>
+        </div>
+
+        <div class="kv">
+          <div class="k">TOP PAGE</div>
+          <div class="v" id="dTopPage">—</div>
+          <div class="s">Most visited content today (demo).</div>
+        </div>
+
+        <div class="kv">
+          <div class="k">AVG TIME ON SITE</div>
+          <div class="v" id="dAvgTime">—</div>
+          <div class="s">Average session duration (estimate).</div>
+        </div>
+
+        <div class="kv">
+          <div class="k">BOUNCE RATE</div>
+          <div class="v" id="dBounce">—</div>
+          <div class="s">High bounce may indicate slow UI or poor targeting.</div>
+        </div>
+
+        <div class="kv">
+          <div class="k">ERRORS (TODAY)</div>
+          <div class="v" id="dErrors">0</div>
+          <div class="s">Server/app errors counted today.</div>
+        </div>
+
+        <div class="kv">
+          <div class="k">UPTIME</div>
+          <div class="v" id="dUptime">99.9%</div>
+          <div class="s">Service uptime estimate.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  const statusApp = document.getElementById("statusApp");
+  const mViews = document.getElementById("mViews");
+  const mVisitors = document.getElementById("mVisitors");
+  const mPosts = document.getElementById("mPosts");
+  const mCtr = document.getElementById("mCtr");
+
+  const d24hViews = document.getElementById("d24hViews");
+  const dTopPage = document.getElementById("dTopPage");
+  const dAvgTime = document.getElementById("dAvgTime");
+  const dBounce = document.getElementById("dBounce");
+  const dErrors = document.getElementById("dErrors");
+  const dUptime = document.getElementById("dUptime");
+
+  const dotUptime = document.getElementById("dotUptime");
+  const dotLoad = document.getElementById("dotLoad");
+  const dotErr = document.getElementById("dotErr");
+  const uptimeLabel = document.getElementById("uptimeLabel");
+  const loadLabel = document.getElementById("loadLabel");
+  const errLabel = document.getElementById("errLabel");
+  const lastUpdate = document.getElementById("lastUpdate");
+
+  const btnRefresh = document.getElementById("btnRefresh");
+  const btnExport = document.getElementById("btnExport");
+  const btnSimulate = document.getElementById("btnSimulate");
+  const btnToggle = document.getElementById("btnToggle");
+  const detailsBody = document.getElementById("detailsBody");
+
+  function fmt(n){ return Number(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+
+  function nowLabel(){
+    const d = new Date();
+    return d.toLocaleString([], {hour:"2-digit", minute:"2-digit"});
+  }
+
+  const sampleTopPages = [
+    "Home / Trending",
+    "Category: AI",
+    "Writer: Top Author",
+    "Post: Featured Story",
+    "Post: Writo Update"
+  ];
+
+  function setSignals({online=true, load="medium", errors="low"}){
+    if(online){
+      dotUptime.className = "dot";
+      uptimeLabel.textContent = "Online";
+    }else{
+      dotUptime.className = "dot bad";
+      uptimeLabel.textContent = "Offline";
+    }
+
+    if(load === "low"){
+      dotLoad.className = "dot";
+      loadLabel.textContent = "Low load";
+    }else if(load === "medium"){
+      dotLoad.className = "dot warn";
+      loadLabel.textContent = "Medium load";
+    }else{
+      dotLoad.className = "dot bad";
+      loadLabel.textContent = "High load";
+    }
+
+    if(errors === "low"){
+      dotErr.className = "dot";
+      errLabel.textContent = "Low errors";
+    }else if(errors === "medium"){
+      dotErr.className = "dot warn";
+      errLabel.textContent = "Medium errors";
+    }else{
+      dotErr.className = "dot bad";
+      errLabel.textContent = "High errors";
+    }
+  }
+
+  function baseMetrics(){
+    const totalViews = Number(statusApp.dataset.totalViews || 0);
+    const totalUsers = Number(statusApp.dataset.totalUsers || 0);
+    const totalPosts = Number(statusApp.dataset.totalPosts || 0);
+    const errorsToday = Number(statusApp.dataset.errors || 0);
+    const avgTime = Number(statusApp.dataset.avgTime || 1);
+    const uptimeHours = Number(statusApp.dataset.uptimeHours || 0);
+    const uptimeMinutes = Number(statusApp.dataset.uptimeMinutes || 0);
+    const uptimeTotalMinutes = (uptimeHours * 60) + uptimeMinutes;
+    const uptimePercent = uptimeTotalMinutes ? (99 + Math.min(0.99, uptimeTotalMinutes / 100000)).toFixed(2) : "99.9";
+
+    mViews.textContent = fmt(totalViews);
+    mVisitors.textContent = fmt(totalUsers);
+    mPosts.textContent = fmt(totalPosts);
+    mCtr.textContent = "2.4%";
+
+    d24hViews.textContent = fmt(Math.max(1, Math.floor(totalViews * 0.03))) + " views";
+    dTopPage.textContent = sampleTopPages[Math.floor(Math.random()*sampleTopPages.length)];
+    dAvgTime.textContent = `${avgTime} min`;
+    dBounce.textContent = (35 + Math.min(30, Math.floor(totalPosts / 10))).toFixed(1) + "%";
+    dErrors.textContent = errorsToday.toString();
+    dUptime.textContent = uptimePercent + "%";
+
+    const errPick = errorsToday <= 3 ? "low" : errorsToday <= 8 ? "medium" : "high";
+    setSignals({online: true, load: "medium", errors: errPick});
+    lastUpdate.textContent = nowLabel();
+  }
+
+  function randomMetrics(){
+    const views = 120000 + Math.floor(Math.random()*80000);
+    const visitors = 32000 + Math.floor(Math.random()*20000);
+    const posts = 380 + Math.floor(Math.random()*60);
+    const ctr = (2.1 + Math.random()*2.3).toFixed(1);
+
+    const last24 = 4200 + Math.floor(Math.random()*3800);
+    const top = sampleTopPages[Math.floor(Math.random()*sampleTopPages.length)];
+    const avgMin = 2 + Math.floor(Math.random()*4);
+    const avgSec = Math.floor(Math.random()*60);
+    const bounce = (35 + Math.random()*18).toFixed(1);
+    const errs = Math.floor(Math.random()*14);
+    const uptime = (99.4 + Math.random()*0.6).toFixed(2);
+
+    mViews.textContent = fmt(views);
+    mVisitors.textContent = fmt(visitors);
+    mPosts.textContent = fmt(posts);
+    mCtr.textContent = ctr + "%";
+
+    d24hViews.textContent = fmt(last24) + " views";
+    dTopPage.textContent = top;
+    dAvgTime.textContent = `${avgMin}m ${avgSec}s`;
+    dBounce.textContent = bounce + "%";
+    dErrors.textContent = errs.toString();
+    dUptime.textContent = uptime + "%";
+
+    const online = Math.random() > 0.05;
+    const loadPick = ["low","medium","high"][Math.floor(Math.random()*3)];
+    const errPick = errs <= 3 ? "low" : errs <= 8 ? "medium" : "high";
+    setSignals({online, load: loadPick, errors: errPick});
+
+    lastUpdate.textContent = nowLabel();
+  }
+
+  btnRefresh.addEventListener("click", baseMetrics);
+  btnSimulate.addEventListener("click", randomMetrics);
+  btnExport.addEventListener("click", ()=>{
+    alert("Demo: Export report (later PDF/CSV)");
+  });
+
+  let detailsOpen = true;
+  btnToggle.addEventListener("click", ()=>{
+    detailsOpen = !detailsOpen;
+    detailsBody.style.display = detailsOpen ? "block" : "none";
+  });
+
+  baseMetrics();
+</script>
 {% endblock %}
