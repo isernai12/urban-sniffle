@@ -4,6 +4,9 @@ import json
 import math
 import sqlite3
 import time
+import asyncio
+import threading
+import inspect
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, jsonify
 from werkzeug.utils import secure_filename
@@ -73,19 +76,34 @@ class LibsqlCursor:
 
 class LibsqlConnection:
     def __init__(self, url, token):
-        self._client = libsql_client.create_client(url, auth_token=token)
+        self._loop = asyncio.new_event_loop()
+        self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
+        self._thread.start()
+        self._client = self._run_async(self._create_client(url, token))
+
+    async def _create_client(self, url, token):
+        return libsql_client.create_client(url, auth_token=token)
+
+    def _run_async(self, coro):
+        return asyncio.run_coroutine_threadsafe(coro, self._loop).result()
 
     def execute(self, query, params=None):
         if params is None:
             params = ()
         result = self._client.execute(query, params)
+        if inspect.isawaitable(result):
+            result = self._run_async(result)
         return LibsqlCursor(result)
 
     def commit(self):
         return None
 
     def close(self):
-        self._client.close()
+        result = self._client.close()
+        if inspect.isawaitable(result):
+            self._run_async(result)
+        self._loop.call_soon_threadsafe(self._loop.stop)
+        self._thread.join(timeout=1)
 
 def get_db_connection():
     return LibsqlConnection(DATABASE_URL, DATABASE_TOKEN)
