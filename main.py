@@ -4,7 +4,7 @@ import json
 import math
 import time
 import inspect
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, jsonify
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -17,6 +17,7 @@ import cloudinary.uploader
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_change_this_in_production'
 APP_START_TIME = time.time()
+app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
 
 # --- কনফিগারেশন ---
 
@@ -422,7 +423,18 @@ def login():
         conn.close()
 
         if user and check_password_hash(user['password'], password):
-            login_user(User(user['id'], user['username'], user['is_admin'], user['name'], user['email'], user['profile_pic']))
+            remember_login = request.form.get('remember') == '1'
+            login_user(
+                User(
+                    user['id'],
+                    user['username'],
+                    user['is_admin'],
+                    user['name'],
+                    user['email'],
+                    user['profile_pic']
+                ),
+                remember=remember_login
+            )
             return redirect(url_for('index'))
         else:
             flash('Invalid email or password.')

@@ -361,7 +361,7 @@
         >
           <div class="thumb">
             {% if report['thumbnail'] %}
-              <img src="{{ url_for('static', filename='uploads/' + report['thumbnail']) }}" alt="{{ report['title'] }}">
+              <img src="{{ report['thumbnail'] | image_url }}" alt="{{ report['title'] }}">
             {% else %}
               <img src="https://picsum.photos/900/400?random={{ report['post_id'] }}" alt="{{ report['title'] }}">
             {% endif %}

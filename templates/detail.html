@@ -580,7 +580,7 @@
       <div class="thumb" aria-label="Thumbnail">
         {% if post['thumbnail'] %}
           <img
-            src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}"
+            src="{{ post['thumbnail'] | image_url }}"
             alt="{{ post['title'] }} thumbnail"
             loading="lazy"
           />
@@ -598,7 +598,7 @@
           {% if post['author_profile_pic'] %}
             <img
               class="avatarImg"
-              src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}"
+              src="{{ post['author_profile_pic'] | image_url(folder='profile') }}"
               alt="{{ post['author_display_name'] }}"
               loading="lazy"
             />
@@ -702,7 +702,7 @@
               {% if current_user.profile_pic %}
                 <img
                   class="meAvatar"
-                  src="{{ url_for('static', filename='profile_uploads/' + current_user.profile_pic) }}"
+                  src="{{ current_user.profile_pic | image_url(folder='profile') }}"
                   alt="{{ current_user.display_name }}"
                   loading="lazy"
                 />
@@ -797,7 +797,7 @@
             <a class="relCard" href="{{ url_for('post_detail', post_id=related['id'], slug=related['slug']) }}" role="button">
               <div class="relImg">
                 {% if related['thumbnail'] %}
-                  <img src="{{ url_for('static', filename='uploads/' + related['thumbnail']) }}" alt="{{ related['title'] }}" loading="lazy">
+                  <img src="{{ related['thumbnail'] | image_url }}" alt="{{ related['title'] }}" loading="lazy">
                 {% else %}
                   <img src="https://picsum.photos/800/450?random={{ related['id'] }}" alt="{{ related['title'] }}" loading="lazy">
                 {% endif %}

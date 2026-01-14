@@ -24,14 +24,14 @@
                 
                 <div style="margin-bottom: 10px;">
                     <label>বর্তমান নরমাল ছবি:</label>
-                    <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" style="height: 60px; display: block; margin-bottom: 5px;">
+                    <img src="{{ post['thumbnail'] | image_url }}" style="height: 60px; display: block; margin-bottom: 5px;">
                     <input type="file" name="thumbnail" accept="image/*">
                 </div>
 
                 <div>
                     <label>বর্তমান ট্রেন্ডিং ছবি:</label>
                     {% if post['trending_thumbnail'] %}
-                        <img src="{{ url_for('static', filename='uploads/' + post['trending_thumbnail']) }}" style="height: 60px; display: block; margin-bottom: 5px;">
+                        <img src="{{ post['trending_thumbnail'] | image_url }}" style="height: 60px; display: block; margin-bottom: 5px;">
                     {% else %}
                         <p style="font-size: 0.8em; color: #666;">(নেই)</p>
                     {% endif %}

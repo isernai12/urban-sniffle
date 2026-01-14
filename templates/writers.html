@@ -11,7 +11,7 @@
             <div class="author-row" style="margin-top: 0;">
                 <div class="author-avatar">
                     {% if writer['profile_pic'] %}
-                        <img src="{{ url_for('static', filename='profile_uploads/' + writer['profile_pic']) }}" alt="profile">
+                        <img src="{{ writer['profile_pic'] | image_url(folder='profile') }}" alt="profile">
                     {% else %}
                         {{ writer['display_name'][:1] }}
                     {% endif %}

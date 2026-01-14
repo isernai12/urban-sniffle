@@ -289,7 +289,7 @@
           <div class="profileHeader">
             <div class="avatarBox">
               {% if user['profile_pic'] %}
-                <img id="avatarPreview" src="{{ url_for('static', filename='profile_uploads/' + user['profile_pic']) }}" alt="Avatar">
+                <img id="avatarPreview" src="{{ user['profile_pic'] | image_url(folder='profile') }}" alt="Avatar">
               {% else %}
                 <img id="avatarPreview" src="https://ui-avatars.com/api/?name={{ user['name'] or user['email'] }}&background=0f172a&color=f8fafc" alt="Avatar">
               {% endif %}

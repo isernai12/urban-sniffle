@@ -5,7 +5,7 @@
     <div class="author-row" style="margin-top: 0;">
         <div class="author-avatar" style="width: 64px; height: 64px; font-size: 1.1rem;">
             {% if user['profile_pic'] %}
-                <img src="{{ url_for('static', filename='profile_uploads/' + user['profile_pic']) }}" alt="profile">
+                <img src="{{ user['profile_pic'] | image_url(folder='profile') }}" alt="profile">
             {% else %}
                 {{ (user['name'] or user['username'])[:1] }}
             {% endif %}
@@ -51,7 +51,7 @@
         <div class="author-row">
             <div class="author-avatar">
                 {% if post['author_profile_pic'] %}
-                    <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="profile">
+                    <img src="{{ post['author_profile_pic'] | image_url(folder='profile') }}" alt="profile">
                 {% else %}
                     {{ post['author_display_name'][:1] }}
                 {% endif %}
