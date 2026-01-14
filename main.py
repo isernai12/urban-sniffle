@@ -2,21 +2,21 @@ import os
 import re
 import json
 import math
-import sqlite3
 import time
-import asyncio
-import threading
 import inspect
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, jsonify
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-import libsql_client
+# libsql এর সিঙ্ক্রোনাস ক্লায়েন্ট ইম্পোর্ট
+from libsql_client import create_client_sync
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_change_this_in_production'
 APP_START_TIME = time.time()
+
+# আপনার ডাটাবেস ক্রেডেনশিয়াল
 DATABASE_URL = "libsql://wroto-nekoadmin.aws-ap-south-1.turso.io"
 DATABASE_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NjgzOTQ5MjIsImlkIjoiZjgzYzlhN2QtNTJmOC00NDBlLWE4ZGMtMDljN2ViZjNlNWUwIiwicmlkIjoiYzlhYjJlODYtNTMxZi00NDc4LWEwYTctMGRjMWJiNGI3ZjBlIn0.AKM9fPVGHzO_nhXYiqlnOoDgxbWatz4O3qGI2-Bg55XV2MrgK_30rEZCBA0XksZw9lQ3XLrP7avp9j00ihdvBA"
 
@@ -34,12 +34,12 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# --- ডাটাবেস ফাংশন ---
+# --- ডাটাবেস ফাংশন (FIXED for Render) ---
 
 class LibsqlRow:
     def __init__(self, columns, values):
-        self._data = dict(zip(columns, values))
         self._values = list(values)
+        self._data = dict(zip(columns, self._values))
 
     def __getitem__(self, key):
         if isinstance(key, int):
@@ -63,7 +63,12 @@ class LibsqlCursor:
         self._rows = []
         self.lastrowid = getattr(result, "last_insert_rowid", None)
         if result and getattr(result, "rows", None) is not None:
-            columns = [col.name for col in result.columns]
+            # কলামের নামগুলো সঠিকভাবে বের করা
+            columns = []
+            if result.columns:
+                # libsql এর ভার্সন ভেদে columns স্ট্রিং বা অবজেক্ট হতে পারে
+                columns = [col if isinstance(col, str) else col.name for col in result.columns]
+            
             self._rows = [LibsqlRow(columns, row) for row in result.rows]
 
     def fetchone(self):
@@ -76,115 +81,107 @@ class LibsqlCursor:
 
 class LibsqlConnection:
     def __init__(self, url, token):
-        self._loop = asyncio.new_event_loop()
-        self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
-        self._thread.start()
-        self._client = self._run_async(self._create_client(url, token))
-
-    async def _create_client(self, url, token):
-        return libsql_client.create_client(url, auth_token=token)
-
-    def _run_async(self, coro):
-        return asyncio.run_coroutine_threadsafe(coro, self._loop).result()
+        # সরাসরি সিঙ্ক্রোনাস কানেকশন (No Asyncio Loop)
+        self._client = create_client_sync(url=url, auth_token=token)
 
     def execute(self, query, params=None):
         if params is None:
             params = ()
+        # সরাসরি কুয়েরি এক্সিকিউট
         result = self._client.execute(query, params)
-        if inspect.isawaitable(result):
-            result = self._run_async(result)
         return LibsqlCursor(result)
 
     def commit(self):
-        return None
+        # Libsql অটো-কমিট মোডে চলে, তাই এখানে কিছু করার দরকার নেই
+        pass
 
     def close(self):
-        result = self._client.close()
-        if inspect.isawaitable(result):
-            self._run_async(result)
-        self._loop.call_soon_threadsafe(self._loop.stop)
-        self._thread.join(timeout=1)
+        self._client.close()
 
 def get_db_connection():
     return LibsqlConnection(DATABASE_URL, DATABASE_TOKEN)
 
 def init_db():
-    conn = get_db_connection()
+    try:
+        conn = get_db_connection()
+        
+        # ১. ইউজার টেবিল
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                is_admin INTEGER DEFAULT 0,
+                name TEXT,
+                email TEXT,
+                bio TEXT,
+                hobby TEXT,
+                categories TEXT,
+                social_links TEXT,
+                facebook_link TEXT,
+                x_link TEXT,
+                instagram_link TEXT,
+                website_link TEXT,
+                youtube_link TEXT,
+                profile_pic TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
 
-    # ১. ইউজার টেবিল
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            is_admin INTEGER DEFAULT 0,
-            name TEXT,
-            email TEXT,
-            bio TEXT,
-            hobby TEXT,
-            categories TEXT,
-            social_links TEXT,
-            facebook_link TEXT,
-            x_link TEXT,
-            instagram_link TEXT,
-            website_link TEXT,
-            youtube_link TEXT,
-            profile_pic TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+        # ২. পোস্ট টেবিল
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS posts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                intro TEXT NOT NULL,
+                content TEXT NOT NULL,
+                category TEXT NOT NULL,
+                views INTEGER DEFAULT 0,
+                status TEXT DEFAULT 'draft', 
+                is_active INTEGER DEFAULT 1, 
+                thumbnail TEXT,
+                trending_thumbnail TEXT,
+                slug TEXT,
+                toc_data TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            )
+        ''')
 
-    # ২. পোস্ট টেবিল (আপডেটেড: user_id, status যুক্ত)
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS posts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            title TEXT NOT NULL,
-            intro TEXT NOT NULL,
-            content TEXT NOT NULL,
-            category TEXT NOT NULL,
-            views INTEGER DEFAULT 0,
-            status TEXT DEFAULT 'draft', -- draft, pending, approved, rejected
-            is_active INTEGER DEFAULT 1, -- ইউজার চাইলে তার approved পোস্ট লুকাতে পারে
-            thumbnail TEXT,
-            trending_thumbnail TEXT,
-            slug TEXT,
-            toc_data TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(user_id) REFERENCES users(id)
-        )
-    ''')
+        # ৩. রিপোর্ট টেবিল
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                reporter_id INTEGER,
+                post_id INTEGER,
+                comment_id INTEGER,
+                reason TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(reporter_id) REFERENCES users(id)
+            )
+        ''')
 
-    # ৩. রিপোর্ট টেবিল (নতুন)
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            reporter_id INTEGER,
-            post_id INTEGER,
-            comment_id INTEGER,
-            reason TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(reporter_id) REFERENCES users(id)
-        )
-    ''')
+        # ৪. লাইক, কমেন্ট ও বুকমার্ক টেবিল
+        conn.execute('CREATE TABLE IF NOT EXISTS post_likes (user_id INTEGER, post_id INTEGER, PRIMARY KEY (user_id, post_id))')
+        conn.execute('CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER, user_id INTEGER, content TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(user_id) REFERENCES users(id))')
+        conn.execute('CREATE TABLE IF NOT EXISTS comment_likes (user_id INTEGER, comment_id INTEGER, PRIMARY KEY (user_id, comment_id))')
+        conn.execute('CREATE TABLE IF NOT EXISTS bookmarks (user_id INTEGER, post_id INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (user_id, post_id))')
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS error_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                message TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
 
-    # ৪. লাইক, কমেন্ট ও বুকমার্ক টেবিল
-    conn.execute('CREATE TABLE IF NOT EXISTS post_likes (user_id INTEGER, post_id INTEGER, PRIMARY KEY (user_id, post_id))')
-    conn.execute('CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER, user_id INTEGER, content TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(user_id) REFERENCES users(id))')
-    conn.execute('CREATE TABLE IF NOT EXISTS comment_likes (user_id INTEGER, comment_id INTEGER, PRIMARY KEY (user_id, comment_id))')
-    conn.execute('CREATE TABLE IF NOT EXISTS bookmarks (user_id INTEGER, post_id INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (user_id, post_id))')
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS error_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            message TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-
-    ensure_user_columns(conn)
-    ensure_post_columns(conn)
-    conn.commit()
-    conn.close()
+        ensure_user_columns(conn)
+        ensure_post_columns(conn)
+        conn.commit()
+        conn.close()
+        print("Database initialized successfully.")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
 
 def ensure_user_columns(conn):
     existing_columns = {
@@ -207,7 +204,10 @@ def ensure_user_columns(conn):
     }
     for column, column_type in columns_to_add.items():
         if column not in existing_columns:
-            conn.execute(f"ALTER TABLE users ADD COLUMN {column} {column_type}")
+            try:
+                conn.execute(f"ALTER TABLE users ADD COLUMN {column} {column_type}")
+            except Exception:
+                pass # কলাম ইতিমধ্যে থাকলে ইগনোর করবে
 
 def ensure_post_columns(conn):
     existing_columns = {
@@ -218,7 +218,10 @@ def ensure_post_columns(conn):
     }
     for column, column_type in columns_to_add.items():
         if column not in existing_columns:
-            conn.execute(f"ALTER TABLE posts ADD COLUMN {column} {column_type}")
+            try:
+                conn.execute(f"ALTER TABLE posts ADD COLUMN {column} {column_type}")
+            except Exception:
+                pass
 
 # --- ইউজার মডেল ---
 class User(UserMixin):
@@ -277,12 +280,12 @@ def parse_json_list(value):
     return [item.strip() for item in str(value).split(',') if item.strip()]
 
 CATEGORY_OPTIONS = [
-    'পাইথন', 'ওয়েব ডেভেলপমেন্ট', 'ডেটা সায়েন্স', 'এআই', 'মোবাইল',
-    'ডিজাইন', 'টেক নিউজ', 'সাইবার সিকিউরিটি', 'ডেভঅপস', 'ক্যারিয়ার'
+    'পাইথন', 'ওয়েব ডেভেলপমেন্ট', 'ডেটা সায়েন্স', 'এআই', 'মোবাইল',
+    'ডিজাইন', 'টেক নিউজ', 'সাইবার সিকিউরিটি', 'ডেভঅপস', 'ক্যারিয়ার'
 ]
 
 HOBBY_OPTIONS = [
-    'ভ্রমণ', 'গান শোনা', 'বই পড়া', 'খেলাধুলা', 'ফটোগ্রাফি',
+    'ভ্রমণ', 'গান শোনা', 'বই পড়া', 'খেলাধুলা', 'ফটোগ্রাফি',
     'রান্না', 'গেমিং', 'লেখালেখি', 'মুভি', 'ড্রইং'
 ]
 
@@ -339,18 +342,21 @@ def is_json_request():
 def inject_global_data():
     bookmarks = []
     if current_user.is_authenticated:
-        conn = get_db_connection()
-        bookmarks = conn.execute('''
-            SELECT posts.id, posts.title, posts.thumbnail, posts.slug
-            FROM bookmarks 
-            JOIN posts ON bookmarks.post_id = posts.id 
-            WHERE bookmarks.user_id = ? 
-            ORDER BY bookmarks.created_at DESC
-        ''', (current_user.id,)).fetchall()
-        conn.close()
-        bookmarks = [
-            dict(row, slug=row['slug'] or slugify_text(row['title'])) for row in bookmarks
-        ]
+        try:
+            conn = get_db_connection()
+            bookmarks = conn.execute('''
+                SELECT posts.id, posts.title, posts.thumbnail, posts.slug
+                FROM bookmarks 
+                JOIN posts ON bookmarks.post_id = posts.id 
+                WHERE bookmarks.user_id = ? 
+                ORDER BY bookmarks.created_at DESC
+            ''', (current_user.id,)).fetchall()
+            conn.close()
+            bookmarks = [
+                dict(row, slug=row['slug'] or slugify_text(row['title'])) for row in bookmarks
+            ]
+        except Exception:
+            bookmarks = []
     return dict(my_bookmarks=bookmarks)
 
 # --- অথেন্টিকেশন রাউটস ---
@@ -368,7 +374,7 @@ def signup():
             flash('Terms & Privacy গ্রহণ করতে হবে।')
             return redirect(url_for('signup'))
         if confirm_password is not None and password != confirm_password:
-            flash('কনফার্ম পাসওয়ার্ড মিলছে না।')
+            flash('কনফার্ম পাসওয়ার্ড মিলছে না।')
             return redirect(url_for('signup'))
 
         hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
@@ -380,7 +386,7 @@ def signup():
 
             existing = conn.execute('SELECT 1 FROM users WHERE email = ?', (email,)).fetchone()
             if existing:
-                flash('এই ইমেইলটি ইতিমধ্যে ব্যবহৃত হয়েছে।')
+                flash('এই ইমেইলটি ইতিমধ্যে ব্যবহৃত হয়েছে।')
                 return redirect(url_for('signup'))
 
             conn.execute(
@@ -390,8 +396,8 @@ def signup():
             conn.commit()
             flash('অ্যাকাউন্ট তৈরি সফল! এখন লগইন করুন।')
             return redirect(url_for('login'))
-        except sqlite3.IntegrityError:
-            flash('এই ইমেইলটি ইতিমধ্যে ব্যবহৃত হয়েছে।')
+        except Exception as e:
+            flash(f'Error: {str(e)}')
         finally:
             conn.close()
     return render_template('signup.html')
@@ -409,23 +415,22 @@ def login():
             login_user(User(user['id'], user['username'], user['is_admin'], user['name'], user['email'], user['profile_pic']))
             return redirect(url_for('index'))
         else:
-            flash('ভুল ইমেইল বা পাসওয়ার্ড।')
+            flash('ভুল ইমেইল বা পাসওয়ার্ড।')
     return render_template('login.html')
 
 @app.errorhandler(500)
 def handle_internal_error(error):
-    conn = get_db_connection()
-    conn.execute("INSERT INTO error_logs (message) VALUES (?)", (str(error),))
-    conn.commit()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        conn.execute("INSERT INTO error_logs (message) VALUES (?)", (str(error),))
+        conn.commit()
+        conn.close()
+    except:
+        pass
     return "Internal Server Error", 500
 
 @app.errorhandler(404)
 def handle_not_found(error):
-    conn = get_db_connection()
-    conn.execute("INSERT INTO error_logs (message) VALUES (?)", (str(error),))
-    conn.commit()
-    conn.close()
     return "Not Found", 404
 
 @app.route('/logout')
@@ -441,7 +446,7 @@ def index():
     conn = get_db_connection()
     # ফিল্টার: status='approved' AND is_active=1
 
-    # ১. ট্রেন্ডিং (Views অনুযায়ী Top 5)
+    # ১. ট্রেন্ডিং (Views অনুযায়ী Top 5)
     trending_posts = conn.execute("""
         SELECT posts.*, users.username, users.name as author_name, users.profile_pic as author_profile_pic
         FROM posts
@@ -605,7 +610,7 @@ def public_profile(user_id):
         selected_hobbies=selected_hobbies
     )
 
-# --- ইউজার এরিয়া (পোস্ট তৈরি ও ম্যানেজ) ---
+# --- ইউজার এরিয়া (পোস্ট তৈরি ও ম্যানেজ) ---
 
 @app.route('/my_posts')
 @login_required
@@ -695,9 +700,9 @@ def create():
             conn.close()
 
             if status == 'pending':
-                flash('পোস্টটি এপ্রুভালের জন্য এডমিনের কাছে পাঠানো হয়েছে!')
+                flash('পোস্টটি এপ্রুভালের জন্য এডমিনের কাছে পাঠানো হয়েছে!')
             else:
-                flash('পোস্টটি ড্রাফট হিসেবে সেভ করা হয়েছে।')
+                flash('পোস্টটি ড্রাফট হিসেবে সেভ করা হয়েছে।')
 
             return redirect(url_for('my_posts'))
 
@@ -742,7 +747,7 @@ def edit_post(post_id):
                      (title, intro, processed_content, category, status, toc_json, slug, post_id))
         conn.commit()
         conn.close()
-        flash('পোস্ট আপডেট করা হয়েছে!')
+        flash('পোস্ট আপডেট করা হয়েছে!')
         return redirect(url_for('my_posts'))
 
     conn.close()
@@ -757,7 +762,7 @@ def delete_user_post(post_id):
         conn.execute('DELETE FROM posts WHERE id = ?', (post_id,))
         conn.execute('DELETE FROM reports WHERE post_id = ?', (post_id,)) # রিপোর্টও ডিলিট
         conn.commit()
-        flash('পোস্ট ডিলিট করা হয়েছে।', 'delete')
+        flash('পোস্ট ডিলিট করা হয়েছে।', 'delete')
     conn.close()
     return redirect(url_for('my_posts'))
 
@@ -772,7 +777,7 @@ def toggle_active_user(post_id):
     conn.close()
     return redirect(url_for('my_posts'))
 
-# --- অ্যাডমিন এরিয়া (ড্যাশবোর্ড, অ্যাকশন, রিপোর্ট ম্যানেজমেন্ট) ---
+# --- অ্যাডমিন এরিয়া (ড্যাশবোর্ড, অ্যাকশন, রিপোর্ট ম্যানেজমেন্ট) ---
 
 @app.route('/admin_dashboard')
 @login_required
@@ -966,14 +971,14 @@ def admin_action_post(post_id, action):
 
     if action == 'approve':
         conn.execute("UPDATE posts SET status = 'approved' WHERE id = ?", (post_id,))
-        flash('পোস্ট এপ্রুভ করা হয়েছে!')
+        flash('পোস্ট এপ্রুভ করা হয়েছে!')
     elif action == 'reject':
         conn.execute("UPDATE posts SET status = 'rejected' WHERE id = ?", (post_id,))
-        flash('পোস্ট রিজেক্ট করা হয়েছে।')
+        flash('পোস্ট রিজেক্ট করা হয়েছে।')
     elif action == 'delete':
         conn.execute("DELETE FROM posts WHERE id = ?", (post_id,))
         conn.execute("DELETE FROM reports WHERE post_id = ?", (post_id,))
-        flash('পোস্ট পার্মানেন্টলি ডিলিট করা হয়েছে।', 'delete')
+        flash('পোস্ট পার্মানেন্টলি ডিলিট করা হয়েছে।', 'delete')
 
     conn.commit()
     conn.close()
@@ -987,15 +992,15 @@ def admin_action_report(report_id, action):
 
     if action == 'dismiss':
         conn.execute("DELETE FROM reports WHERE id = ?", (report_id,))
-        flash('রিপোর্ট বাতিল করা হয়েছে।')
+        flash('রিপোর্ট বাতিল করা হয়েছে।')
     elif action == 'delete_content':
         report = conn.execute("SELECT * FROM reports WHERE id = ?", (report_id,)).fetchone()
         if report['post_id']:
             conn.execute("DELETE FROM posts WHERE id = ?", (report['post_id'],))
-            flash('রিপোর্ট করা পোস্ট ডিলিট করা হয়েছে।', 'delete')
+            flash('রিপোর্ট করা পোস্ট ডিলিট করা হয়েছে।', 'delete')
         elif report['comment_id']:
             conn.execute("DELETE FROM comments WHERE id = ?", (report['comment_id'],))
-            flash('রিপোর্ট করা কমেন্ট ডিলিট করা হয়েছে।', 'delete')
+            flash('রিপোর্ট করা কমেন্ট ডিলিট করা হয়েছে।', 'delete')
         conn.execute("DELETE FROM reports WHERE id = ?", (report_id,))
 
     conn.commit()
@@ -1011,7 +1016,7 @@ def toggle_status(post_id):
     conn.execute("UPDATE posts SET is_active = NOT is_active WHERE id = ?", (post_id,))
     conn.commit()
     conn.close()
-    flash('পোস্ট স্ট্যাটাস আপডেট করা হয়েছে।')
+    flash('পোস্ট স্ট্যাটাস আপডেট করা হয়েছে।')
     return redirect(request.referrer or url_for('manage_posts'))
 
 @app.route('/delete_post/<int:post_id>')
@@ -1030,7 +1035,7 @@ def delete_post(post_id):
     conn.execute("DELETE FROM posts WHERE id = ?", (post_id,))
     conn.commit()
     conn.close()
-    flash('পোস্ট ডিলিট করা হয়েছে।', 'delete')
+    flash('পোস্ট ডিলিট করা হয়েছে।', 'delete')
     return redirect(request.referrer or url_for('manage_posts'))
 
 # --- রিপোর্ট সাবমিশন (ইউজার সাইড) ---
@@ -1048,7 +1053,7 @@ def report_content():
         conn.commit()
         conn.close()
         if not is_json_request():
-            flash('আপনার রিপোর্ট এডমিনের কাছে পাঠানো হয়েছে।')
+            flash('আপনার রিপোর্ট এডমিনের কাছে পাঠানো হয়েছে।')
 
     if is_json_request():
         return jsonify({"success": True})
@@ -1089,12 +1094,12 @@ def post_detail(post_id, slug):
     is_admin = current_user.is_authenticated and current_user.is_admin
     is_published = (post['status'] == 'approved' and post['is_active'] == 1)
 
-    # যদি প্রকাশিত না হয়, এবং ইউজার লেখক বা অ্যাডমিন না হয় -> এক্সেস নেই
+    # যদি প্রকাশিত না হয়, এবং ইউজার লেখক বা অ্যাডমিন না হয় -> এক্সেস নেই
     if not is_published and not is_author and not is_admin:
         conn.close()
-        return "এই পোস্টটি দেখার অনুমতি নেই বা এটি প্রকাশিত হয়নি।", 403
+        return "এই পোস্টটি দেখার অনুমতি নেই বা এটি প্রকাশিত হয়নি।", 403
 
-    # ভিউ কাউন্ট (শুধুমাত্র পাবলিক ভিউতে বাড়বে)
+    # ভিউ কাউন্ট (শুধুমাত্র পাবলিক ভিউতে বাড়বে)
     if is_published and not is_admin:
         conn.execute('UPDATE posts SET views = views + 1 WHERE id = ?', (post_id,))
         conn.commit()
@@ -1181,11 +1186,11 @@ def manage_profile():
         if new_password:
             if not current_password or not check_password_hash(user['password'], current_password):
                 conn.close()
-                flash('বর্তমান পাসওয়ার্ড সঠিক নয়।')
+                flash('বর্তমান পাসওয়ার্ড সঠিক নয়।')
                 return redirect(url_for('manage_profile'))
             if new_password != confirm_password:
                 conn.close()
-                flash('নতুন পাসওয়ার্ড মিলছে না।')
+                flash('নতুন পাসওয়ার্ড মিলছে না।')
                 return redirect(url_for('manage_profile'))
             hashed_pw = generate_password_hash(new_password, method='pbkdf2:sha256')
             conn.execute('UPDATE users SET password = ? WHERE id = ?', (hashed_pw, current_user.id))
@@ -1210,7 +1215,7 @@ def manage_profile():
         ))
         conn.commit()
         conn.close()
-        flash('প্রোফাইল আপডেট করা হয়েছে।')
+        flash('প্রোফাইল আপডেট করা হয়েছে।')
         return redirect(url_for('manage_profile'))
 
     conn.close()
@@ -1305,7 +1310,7 @@ def toggle_bookmark(post_id):
     conn.close()
     if is_json_request():
         return jsonify({"bookmarked": not existing})
-    flash('বুকমার্ক রিমুভ করা হয়েছে।' if existing else 'বুকমার্ক যুক্ত করা হয়েছে!')
+    flash('বুকমার্ক রিমুভ করা হয়েছে।' if existing else 'বুকমার্ক যুক্ত করা হয়েছে!')
     return redirect(request.referrer or url_for('index'))
 
 if __name__ == '__main__':
