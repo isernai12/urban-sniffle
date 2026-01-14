@@ -543,8 +543,13 @@ def my_posts():
 
     conn = get_db_connection()
     posts = conn.execute('SELECT * FROM posts WHERE user_id = ? ORDER BY id DESC', (current_user.id,)).fetchall()
+    total_posts = conn.execute('SELECT COUNT(*) FROM posts WHERE user_id = ?', (current_user.id,)).fetchone()[0]
+    total_views = conn.execute('SELECT COALESCE(SUM(views), 0) FROM posts WHERE user_id = ?', (current_user.id,)).fetchone()[0]
+    total_likes = conn.execute('''\n        SELECT COUNT(*) FROM post_likes\n        JOIN posts ON post_likes.post_id = posts.id\n        WHERE posts.user_id = ?\n    ''', (current_user.id,)).fetchone()[0]
+    total_comments = conn.execute('''\n        SELECT COUNT(*) FROM comments\n        JOIN posts ON comments.post_id = posts.id\n        WHERE posts.user_id = ?\n    ''', (current_user.id,)).fetchone()[0]
+    posts_last_30 = conn.execute(\n        \"SELECT COUNT(*) FROM posts WHERE user_id = ? AND created_at >= datetime('now', '-30 days')\",\n        (current_user.id,)\n    ).fetchone()[0]
     conn.close()
-    return render_template('my_posts.html', posts=posts)
+    return render_template(\n        'my_posts.html',\n        posts=posts,\n        total_posts=total_posts,\n        total_views=total_views,\n        total_likes=total_likes,\n        total_comments=total_comments,\n        posts_last_30=posts_last_30\n+    )
 
 @app.route('/create', methods=('GET', 'POST'))
 @login_required
@@ -758,7 +763,8 @@ def admin_reports():
         return "Access Denied", 403
     conn = get_db_connection()
     post_reports = conn.execute('''
-        SELECT reports.*, posts.title, posts.slug as post_slug, users.username as reporter_name
+        SELECT reports.*, posts.title, posts.slug as post_slug, posts.thumbnail,
+               users.username as reporter_name
         FROM reports
         JOIN posts ON reports.post_id = posts.id
         JOIN users ON reports.reporter_id = users.id
@@ -771,13 +777,19 @@ def admin_reports():
     ]
 
     comment_reports = conn.execute('''
-        SELECT reports.*, comments.content as comment_content, users.username as reporter_name
+        SELECT reports.*, comments.content as comment_content, posts.title as post_title,
+               posts.slug as post_slug, posts.id as post_id, users.username as reporter_name
         FROM reports
         JOIN comments ON reports.comment_id = comments.id
+        JOIN posts ON comments.post_id = posts.id
         JOIN users ON reports.reporter_id = users.id
         WHERE reports.comment_id IS NOT NULL
         ORDER BY reports.created_at DESC
     ''').fetchall()
+    comment_reports = [
+        dict(row, post_slug=row['post_slug'] or slugify_text(row['post_title']))
+        for row in comment_reports
+    ]
     conn.close()
     return render_template('admin_reports.html', post_reports=post_reports, comment_reports=comment_reports)
 
