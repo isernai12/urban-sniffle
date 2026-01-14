@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>{% block title %}পাইথন ব্লগ কমিউনিটি{% endblock %}</title>
+  <title>{% block title %}Python Blog Community{% endblock %}</title>
 
   <!-- Font -->
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
@@ -37,6 +37,17 @@
 
       --ringSize:16px;
       --ringStroke:3px;
+
+      /* Premium toast variables (light) */
+      --toastBg: rgba(255,255,255,0.78);
+      --toastBorder: rgba(2, 6, 23, 0.08);
+      --toastShadow: 0 18px 50px rgba(2,6,23,.12), 0 6px 16px rgba(2,6,23,.08);
+      --toastTitle: #0f172a;
+      --toastMsg: #475569;
+      --toastClose: #94a3b8;
+      --toastGlassBlur: 14px;
+      --toastBarBg: rgba(2, 6, 23, 0.10);
+      --toastBarFill: rgba(2, 6, 23, 0.42);
     }
 
     body[data-theme="dark"]{
@@ -52,6 +63,16 @@
 
       --card: rgba(255,255,255,0.06);
       --border: rgba(255,255,255,0.10);
+
+      /* Premium toast variables (dark) */
+      --toastBg: rgba(10,10,10,0.70);
+      --toastBorder: rgba(255,255,255,0.12);
+      --toastShadow: 0 22px 70px rgba(0,0,0,.55), 0 10px 24px rgba(0,0,0,.35);
+      --toastTitle: #f8fafc;
+      --toastMsg: #cbd5e1;
+      --toastClose: rgba(255,255,255,0.60);
+      --toastBarBg: rgba(255,255,255,0.12);
+      --toastBarFill: rgba(255,255,255,0.48);
     }
 
     html, body{height:100%}
@@ -83,8 +104,6 @@
       box-shadow:0 2px 10px rgba(15,23,42,0.06);
       overflow:hidden;
       transform: translateZ(0);
-
-      /* ✅ FIX: header absolute হওয়ায় জায়গা ধরে রাখবে */
       min-height: var(--mainH);
     }
     body[data-theme="dark"] .writoHeaderStack{
@@ -129,10 +148,9 @@
       will-change: padding-top;
     }
 
-    /* ✅ Tracker ডিফল্টভাবে সব পেইজে লুকানো */
+    /* ✅ Tracker hidden globally */
     #articleTracker{display:none;}
-
-    /* ✅ শুধু detail page এ tracker দেখাবে */
+    /* ✅ only detail page shows tracker */
     body.hasDetailTracker #articleTracker{display:block;}
 
     .trackerInner{
@@ -175,10 +193,9 @@
     }
     body:not([data-theme="dark"]) .ringFill{stroke:rgba(15,23,42,0.92)}
 
-    /* ✅ tracker title hidden globally */
+    /* tracker title hidden globally */
     .trkTitle{display:none;}
-
-    /* ✅ show tracker title only on detail page */
+    /* show tracker title only on detail page */
     body.hasDetailTracker .trkTitle{
       display:block;
       flex:1;
@@ -192,10 +209,9 @@
     }
     body.hasDetailTracker .trkTitle span{color:var(--text);font-weight:300}
 
-    /* ✅ TOC button hide globally */
+    /* TOC button hide globally */
     #tocBtn{display:none;}
-
-    /* ✅ show TOC button only on detail page */
+    /* show TOC button only on detail page */
     body.hasDetailTracker #tocBtn{display:grid;}
 
     .tocBtn{
@@ -260,15 +276,18 @@
     body[data-theme="dark"] .writoMenuHeader .writoIconBtn{background: rgba(255,255,255,0.06)}
 
     .writoMenuSectionTitle{
-      margin:10px 0 8px;
-      font-size:12px;
+      margin:12px 0 8px;
+      font-size:11px;
       font-weight:700;
       color:var(--muted);
-      letter-spacing:.2px;
+      letter-spacing:.25px;
       text-transform:uppercase;
     }
 
-    .writoMenuItem{
+    /* ✅ Menu items */
+    .writoMenuItem,
+    .writoMenuToggle{
+      width:100%;
       display:flex; align-items:center; gap:12px;
       font-size:14px;
       padding:10px 0;
@@ -277,26 +296,96 @@
       color:var(--text);
       font-weight:300;
       text-decoration:none;
+      background:transparent;
+      border-left:none;
+      border-right:none;
+      border-top:none;
+      font-family:inherit;
+      text-align:left;
     }
-    body[data-theme="dark"] .writoMenuItem{border-bottom:1px solid rgba(255,255,255,0.12)}
+    body[data-theme="dark"] .writoMenuItem,
+    body[data-theme="dark"] .writoMenuToggle{
+      border-bottom:1px solid rgba(255,255,255,0.12)
+    }
     .writoMenuItem:last-child{border-bottom:none}
 
-    .writoPill{
-      display:inline-flex;
+    .writoMenuItem .rightHint,
+    .writoMenuToggle .rightHint{
+      margin-left:auto;
+      display:flex;
       align-items:center;
       gap:8px;
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid rgba(0,0,0,0.10);
-      background: rgba(255,255,255,0.35);
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    /* Categories dropdown */
+    .catWrap{border-bottom:1px solid rgba(0,0,0,0.12)}
+    body[data-theme="dark"] .catWrap{border-bottom:1px solid rgba(255,255,255,0.12)}
+    .catWrap:last-child{border-bottom:none}
+
+    .catChevron{
+      width:18px;height:18px;
+      transition: transform .18s ease;
+    }
+    .catWrap.open .catChevron{transform: rotate(180deg);}
+
+    .catList{
+      display:none;
+      padding:6px 0 10px;
+    }
+    .catWrap.open .catList{display:block;}
+
+    .catItem{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:9px 0 9px 26px;
       text-decoration:none;
       color:var(--text);
-      font-weight:700;
       font-size:13px;
+      font-weight:300;
+      border-bottom:1px solid rgba(0,0,0,0.08);
+      opacity:.95;
+    }
+    body[data-theme="dark"] .catItem{border-bottom:1px solid rgba(255,255,255,0.10)}
+    .catItem:last-child{border-bottom:none}
+    .catItem:hover{opacity:1}
+    .catDot{
+      width:8px;height:8px;border-radius:999px;
+      background: rgba(15,23,42,0.28);
+      flex:0 0 auto;
+    }
+    body[data-theme="dark"] .catDot{background: rgba(255,255,255,0.22)}
+
+    .writoUserCard{
+      background: var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:12px;
+      box-shadow:0 6px 18px rgba(16,24,40,.04);
       margin-bottom:10px;
     }
-    body[data-theme="dark"] .writoPill{
-      border:1px solid rgba(255,255,255,0.12);
+    body[data-theme="dark"] .writoUserCard{
+      box-shadow:0 12px 32px rgba(0,0,0,.35);
+    }
+    .writoUserTop{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      font-size:13px;
+      color:var(--text);
+      font-weight:500;
+    }
+    .writoBadge{
+      font-size:11px;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(0,0,0,0.10);
+      background: rgba(255,255,255,0.45);
+      color: var(--text);
+      font-weight:700;
+    }
+    body[data-theme="dark"] .writoBadge{
+      border:1px solid rgba(255,255,255,0.14);
       background: rgba(255,255,255,0.06);
     }
 
@@ -392,94 +481,138 @@
       margin-bottom:14px;
     }
 
+    /* =========================
+       PREMIUM FLASH / TOAST
+       ========================= */
     #flash-container{
       position: fixed;
-      top: 20px;
+      top: 18px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 2000;
       display: flex;
       flex-direction: column;
       gap: 10px;
-      width: 90%;
-      max-width: 420px;
+      width: 92%;
+      max-width: 430px;
       pointer-events: none;
     }
 
     .flash-toast{
       pointer-events: auto;
-      background: #ffffff;
-      padding: 14px 18px;
-      border-radius: 14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15), 0 4px 6px rgba(0,0,0,0.05);
-      border: 1px solid rgba(0,0,0,0.05);
+      position: relative;
+      overflow: hidden;
+
+      background: var(--toastBg);
+      backdrop-filter: blur(var(--toastGlassBlur)) saturate(135%);
+      -webkit-backdrop-filter: blur(var(--toastGlassBlur)) saturate(135%);
+      border: 1px solid var(--toastBorder);
+      border-radius: 18px;
+      box-shadow: var(--toastShadow);
+
+      padding: 14px 14px;
       display: flex;
       align-items: center;
       gap: 12px;
-      position: relative;
-      overflow: hidden;
-      animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+
+      animation: slideDown 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.18) forwards;
       opacity: 0;
-      transform: translateY(-20px);
+      transform: translateY(-16px);
     }
 
-    @keyframes slideDown {
-      to { opacity: 1; transform: translateY(0); }
+    @keyframes slideDown { to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px) scale(0.97); } }
+
+    /* timer bar */
+    .flash-toast::after{
+      content:"";
+      position:absolute;
+      left:12px; right:12px; bottom:10px;
+      height:3px;
+      border-radius:999px;
+      background: var(--toastBarBg);
+      overflow:hidden;
     }
-    @keyframes fadeOut {
-      to { opacity: 0; transform: translateY(-10px) scale(0.95); }
+    .flash-toast::before{
+      content:"";
+      position:absolute;
+      left:12px; bottom:10px;
+      height:3px;
+      border-radius:999px;
+      width: calc(100% - 24px);
+      background: var(--toastBarFill);
+      transform-origin: left center;
+      animation: toastTimer 4s linear forwards;
+      opacity:.9;
     }
+    @keyframes toastTimer { to { transform: scaleX(0); } }
 
     .flash-icon{
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 24px;
-      height: 24px;
+      width: 34px;
+      height: 34px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
       flex-shrink: 0;
+      background: rgba(255,255,255,0.40);
+      border: 1px solid rgba(0,0,0,0.06);
     }
-    .flash-icon svg{ width: 22px; height: 22px; }
+    body[data-theme="dark"] .flash-icon{
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    .flash-icon svg{ width: 20px; height: 20px; }
 
-    .flash-content{ flex: 1; }
-    .flash-title{ font-size: 14px; font-weight: 700; color: #0f172a; line-height: 1.2; }
-    .flash-msg{ font-size: 12px; font-weight: 400; color: #64748b; margin-top: 2px; }
+    .flash-content{ flex: 1; padding-right: 6px; }
+    .flash-title{
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--toastTitle);
+      letter-spacing: -0.2px;
+      line-height: 1.1;
+    }
+    .flash-msg{
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--toastMsg);
+      margin-top: 3px;
+      line-height: 1.35;
+    }
 
     .flash-close{
       background: transparent;
       border: none;
-      color: #94a3b8;
+      color: var(--toastClose);
       cursor: pointer;
-      padding: 4px;
+      padding: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 50%;
-      transition: background 0.2s;
+      border-radius: 12px;
+      transition: background 0.18s ease, color 0.18s ease, transform .12s ease;
     }
-    .flash-close:hover { background: #f1f5f9; color: #0f172a; }
-    .flash-close svg{ width: 16px; height: 16px; }
+    .flash-close:hover { background: rgba(255,255,255,0.14); color: var(--toastTitle); }
+    body[data-theme="dark"] .flash-close:hover{ background: rgba(255,255,255,0.08); }
+    .flash-close:active{ transform: scale(.98); }
+    .flash-close svg{ width: 18px; height: 18px; }
 
-    .flash-toast.success { border-left: 4px solid #22c55e; }
-    .flash-toast.success .flash-icon { color: #22c55e; }
+    /* Accent strip */
+    .flash-toast{ --accent:#3b82f6; }
+    .flash-toast.success{ --accent:#22c55e; }
+    .flash-toast.error{ --accent:#ef4444; }
+    .flash-toast.warning{ --accent:#f59e0b; }
+    .flash-toast.info{ --accent:#3b82f6; }
+    .flash-toast.delete{ --accent:#f97316; }
 
-    .flash-toast.error { border-left: 4px solid #ef4444; }
-    .flash-toast.error .flash-icon { color: #ef4444; }
-
-    .flash-toast.warning { border-left: 4px solid #f59e0b; }
-    .flash-toast.warning .flash-icon { color: #f59e0b; }
-
-    .flash-toast.info { border-left: 4px solid #3b82f6; }
-    .flash-toast.info .flash-icon { color: #3b82f6; }
-
-    .flash-toast.delete {
-      border-left: 4px solid #f97316;
-      background: linear-gradient(135deg, rgba(15,23,42,0.95), rgba(30,41,59,0.95));
-      border-color: rgba(249,115,22,0.6);
+    .flash-toast{
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04) inset,
+        var(--toastShadow);
     }
-    .flash-toast.delete .flash-title{ color: #f8fafc; }
-    .flash-toast.delete .flash-msg{ color: #cbd5f5; }
-    .flash-toast.delete .flash-icon{ color: #f97316; }
-    .flash-toast.delete .flash-close:hover{ background: rgba(255,255,255,0.12); color: #fff; }
+    .flash-toast .flash-icon{ color: var(--accent); }
+    .flash-toast{
+      border-left: 4px solid color-mix(in srgb, var(--accent) 80%, transparent);
+    }
 
     /* Footer */
     .writoFooterWrap{max-width:520px;margin:0 auto;padding:0 14px 18px}
@@ -573,55 +706,91 @@
       </div>
 
       {% if current_user.is_authenticated %}
-        <div style="margin-bottom:12px;">
-          <div class="writoPill" style="width:100%; justify-content:space-between;">
-            <span>স্বাগতম, <strong>{{ current_user.display_name }}</strong></span>
-            {% if current_user.is_admin %}<span style="font-size:12px;opacity:.8">(Admin)</span>{% endif %}
+        <div class="writoUserCard">
+          <div class="writoUserTop">
+            <span>Welcome, <strong>{{ current_user.display_name }}</strong></span>
+            {% if current_user.is_admin %}
+              <span class="writoBadge">Admin</span>
+            {% endif %}
           </div>
-
-          <a class="writoPill" href="/profile"><span data-lucide="user"></span> প্রোফাইল</a>
-
-          {% if current_user.is_admin %}
-            <a class="writoPill" href="/admin/pending"><span data-lucide="shield"></span> পেন্ডিং রিভিউ</a>
-            <a class="writoPill" href="/admin/reports"><span data-lucide="flag"></span> রিপোর্টস</a>
-            <a class="writoPill" href="/manage_posts"><span data-lucide="layout-list"></span> পোস্ট ম্যানেজ</a>
-          {% else %}
-            <a class="writoPill" href="/my_posts"><span data-lucide="file-text"></span> আমার পোস্ট</a>
-          {% endif %}
-
-          <a class="writoPill" href="/logout" style="border-color:rgba(239,68,68,.35)"><span data-lucide="log-out"></span> লগ আউট</a>
         </div>
+
+        <a class="writoMenuItem" href="/profile">
+          <span data-lucide="user"></span><span>Profile</span>
+        </a>
+
+        {% if current_user.is_admin %}
+          <a class="writoMenuItem" href="/admin/pending">
+            <span data-lucide="shield"></span><span>Pending Review</span>
+          </a>
+          <a class="writoMenuItem" href="/admin/reports">
+            <span data-lucide="flag"></span><span>Reports</span>
+          </a>
+          <a class="writoMenuItem" href="/manage_posts">
+            <span data-lucide="layout-list"></span><span>Manage Posts</span>
+          </a>
+        {% else %}
+          <a class="writoMenuItem" href="/my_posts">
+            <span data-lucide="file-text"></span><span>My Posts</span>
+          </a>
+        {% endif %}
+
+        <a class="writoMenuItem" href="/logout">
+          <span data-lucide="log-out"></span><span>Logout</span>
+        </a>
       {% else %}
-        <a class="writoPill" href="/login"><span data-lucide="log-in"></span> লগ ইন</a>
-        <a class="writoPill" href="/signup"><span data-lucide="user-plus"></span> সাইন আপ</a>
+        <a class="writoMenuItem" href="/login">
+          <span data-lucide="log-in"></span><span>Login</span>
+        </a>
+        <a class="writoMenuItem" href="/signup">
+          <span data-lucide="user-plus"></span><span>Sign Up</span>
+        </a>
       {% endif %}
 
-      <div class="writoMenuSectionTitle">ক্যাটাগরি</div>
+      <div class="writoMenuSectionTitle">Browse</div>
+      <a class="writoMenuItem" href="/"><span data-lucide="home"></span><span>Home</span></a>
+      <a class="writoMenuItem" href="/list?type=latest"><span data-lucide="clock"></span><span>All Posts</span></a>
 
-      <a class="writoMenuItem" href="/"><span data-lucide="home"></span><span>হোম</span></a>
-      <a class="writoMenuItem" href="/list?type=latest"><span data-lucide="clock"></span><span>সকল পোস্ট</span></a>
+      <!-- ✅ Categories collapsible -->
+      <div class="writoMenuSectionTitle">Categories</div>
 
-      {% for cat in all_categories %}
-        <a class="writoMenuItem" href="/list?type=category&category={{ cat['category'] }}">
+      <div class="catWrap" id="catWrap">
+        <button class="writoMenuToggle" id="catToggle" type="button" aria-expanded="false" aria-controls="catList">
           <span data-lucide="layout-grid"></span>
-          <span>{{ cat['category'] }}</span>
-        </a>
-      {% endfor %}
+          <span>Categories</span>
+          <span class="rightHint">
+            <span id="catCount">{{ all_categories|length }}</span>
+            <svg class="catChevron" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </span>
+        </button>
+
+        <div class="catList" id="catList">
+          {% for cat in all_categories %}
+            <a class="catItem" href="/list?type=category&category={{ cat['category'] }}">
+              <span class="catDot"></span>
+              <span>{{ cat['category'] }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+
     </aside>
 
     <!-- Search modal -->
     <section class="writoModal" id="writoModalSearch" aria-hidden="true">
       <div class="writoModalInner">
         <div class="writoModalHead">
-          <div class="writoModalTitle"><span data-lucide="search"></span> অনুসন্ধান</div>
+          <div class="writoModalTitle"><span data-lucide="search"></span> Search</div>
           <button class="writoModalClose" type="button" data-writo-close aria-label="Close">
             <span data-lucide="x"></span>
           </button>
         </div>
 
         <form action="/search" method="get">
-          <input class="writoSearchInput" name="q" type="search" placeholder="কী খুঁজতে চান? (টাইটেল, টপিক...)" required />
-          <div class="writoHint">Enter চাপলে সার্চ হবে।</div>
+          <input class="writoSearchInput" name="q" type="search" placeholder="Search titles, topics..." required />
+          <div class="writoHint">Press Enter to search.</div>
         </form>
       </div>
     </section>
@@ -630,7 +799,7 @@
     <section class="writoModal" id="writoModalSaved" aria-hidden="true">
       <div class="writoModalInner">
         <div class="writoModalHead">
-          <div class="writoModalTitle"><span data-lucide="bookmark"></span> আমার বুকমার্ক</div>
+          <div class="writoModalTitle"><span data-lucide="bookmark"></span> My Bookmarks</div>
           <button class="writoModalClose" type="button" data-writo-close aria-label="Close">
             <span data-lucide="x"></span>
           </button>
@@ -645,35 +814,37 @@
                      style="text-decoration:none;color:var(--text);font-weight:700;font-size:13px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                     {{ bm['title'] }}
                   </a>
-                  <a href="/toggle_bookmark/{{ bm['id'] }}" title="Remove" style="text-decoration:none;font-size:18px;color:#ef4444;">&times;</a>
+                  <a href="/toggle_bookmark/{{ bm['id'] }}" title="Remove"
+                     style="text-decoration:none;font-size:18px;color:#ef4444;">&times;</a>
                 </div>
               {% endfor %}
             </div>
           {% else %}
-            <div class="writoHint" style="margin:0">কোনো বুকমার্ক সেভ করা নেই।</div>
+            <div class="writoHint" style="margin:0">No bookmarks saved yet.</div>
           {% endif %}
         {% else %}
-          <div class="writoHint" style="margin:0">বুকমার্ক দেখতে লগ ইন করুন।</div>
+          <div class="writoHint" style="margin:0">Please log in to view bookmarks.</div>
         {% endif %}
       </div>
     </section>
 
-    <!-- ✅ TOC modal (detail.html এটা ব্যবহার করবে) -->
+    <!-- ✅ TOC modal (detail.html uses this) -->
     <section class="writoModal" id="writoModalToc" aria-hidden="true">
       <div class="writoModalInner">
         <div class="writoModalHead">
-          <div class="writoModalTitle"><span data-lucide="list"></span> সেকশনসমূহ</div>
+          <div class="writoModalTitle"><span data-lucide="list"></span> Sections</div>
           <button class="writoModalClose" type="button" data-writo-close aria-label="Close">
             <span data-lucide="x"></span>
           </button>
         </div>
 
         {% block toc_modal_content %}
-          <div class="writoHint" style="margin:0">এই পেজে কোনো TOC নেই।</div>
+          <div class="writoHint" style="margin:0">No table of contents on this page.</div>
         {% endblock %}
       </div>
     </section>
 
+    <!-- Flash messages -->
     <div id="flash-container" aria-live="polite" aria-atomic="true">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -694,7 +865,11 @@
               </div>
               <div class="flash-content">
                 <div class="flash-title">
-                  {% if category == 'success' %}Success{% elif category == 'error' %}Error{% elif category == 'warning' %}Warning{% elif category == 'delete' %}Deleted{% else %}Notice{% endif %}
+                  {% if category == 'success' %}Success
+                  {% elif category == 'error' %}Error
+                  {% elif category == 'warning' %}Warning
+                  {% elif category == 'delete' %}Deleted
+                  {% else %}Notice{% endif %}
                 </div>
                 <div class="flash-msg">{{ message }}</div>
               </div>
@@ -718,7 +893,7 @@
         <footer class="writoFooter">
           <div>
             <div class="minLogo">Writo</div>
-            <div class="minCopy">© ২০২৬ • All rights reserved</div>
+            <div class="minCopy">© 2026 • All rights reserved</div>
           </div>
 
           <div class="minSocial" aria-label="Social links">
@@ -747,7 +922,7 @@
       flashContainer.querySelectorAll("[data-flash-item]").forEach(toast => {
         const closeBtn = toast.querySelector("[data-flash-close]");
         const removeToast = () => {
-          toast.style.animation = "fadeOut 0.3s forwards";
+          toast.style.animation = "fadeOut 0.28s forwards";
           toast.addEventListener("animationend", () => toast.remove(), { once: true });
         };
         closeBtn?.addEventListener("click", removeToast);
@@ -790,7 +965,11 @@
       iconSun: document.getElementById("writoIconSun"),
 
       ring: document.getElementById("ringFill"),
-      currentSection: document.getElementById("currentSection")
+      currentSection: document.getElementById("currentSection"),
+
+      catWrap: document.getElementById("catWrap"),
+      catToggle: document.getElementById("catToggle"),
+      catList: document.getElementById("catList"),
     };
 
     function applyTheme(theme){
@@ -887,6 +1066,14 @@
     W.overlay.addEventListener("click", closeAll);
     window.addEventListener("keydown", (e) => { if(e.key==="Escape") closeAll(); });
 
+    // ✅ Categories dropdown toggle (inside menu)
+    if (W.catToggle && W.catWrap && W.catList) {
+      W.catToggle.addEventListener("click", () => {
+        const open = W.catWrap.classList.toggle("open");
+        W.catToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+    }
+
     // Progress ring fill based on scroll
     let raf = 0;
     function updateProgress(){
@@ -908,7 +1095,6 @@
 
     /* ✅ Compact header behavior ONLY detail page */
     if (document.body.classList.contains("hasDetailTracker")) {
-
       let lastY = Math.max(0, window.scrollY || 0);
       let ticking = false;
       let compact = false;
