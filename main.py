@@ -711,12 +711,16 @@ def admin_dashboard():
     pending_count = conn.execute("SELECT COUNT(*) FROM posts WHERE status = 'pending'").fetchone()[0]
     post_report_count = conn.execute("SELECT COUNT(*) FROM reports WHERE post_id IS NOT NULL").fetchone()[0]
     comment_report_count = conn.execute("SELECT COUNT(*) FROM reports WHERE comment_id IS NOT NULL").fetchone()[0]
+    total_posts = conn.execute("SELECT COUNT(*) FROM posts").fetchone()[0]
+    total_users = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
 
     conn.close()
     return render_template('admin_dashboard.html',
                            pending_count=pending_count,
                            post_report_count=post_report_count,
-                           comment_report_count=comment_report_count)
+                           comment_report_count=comment_report_count,
+                           total_posts=total_posts,
+                           total_users=total_users)
 
 @app.route('/admin/status')
 @login_required
