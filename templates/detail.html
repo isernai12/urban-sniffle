@@ -233,11 +233,10 @@
 
     /* -----------------------
       Post Body: Markdown/Rich content styles
-      (client-side markdown render -> HTML)
     ------------------------*/
     .postBody{
       margin-top:12px;
-      font-weight:300;          /* ✅ content একটু চিকন */
+      font-weight:300;
       font-size:15px;
       line-height:2.0;
       color:rgba(255,255,255,0.72);
@@ -245,7 +244,6 @@
       overflow-wrap:anywhere;
     }
     body:not([data-theme="dark"]) .postBody{color:rgba(15,23,42,0.72)}
-
     .postBody p{margin:0 0 16px}
 
     .postBody h2{
@@ -1021,13 +1019,14 @@
 {% block body_scripts %}
 <script>
   /* ------------------------------------------------
-    Client-side Markdown -> HTML + Sanitizer
-    No backend required
+    ✅ Client-side Markdown -> HTML + Sanitizer
+    ✅ + RESTORE TOC MARKERS (toc-1, toc-2...)
   -------------------------------------------------*/
   (function(){
     const root = document.getElementById("postBody");
     if (!root) return;
 
+    const TOC_ITEMS = {{ (toc_items or []) | tojson }};
     const md = root.dataset.md || "";
     if (!md.trim()) return;
 
@@ -1037,6 +1036,17 @@
        .replace(/>/g, "&gt;")
        .replace(/"/g, "&quot;")
        .replace(/'/g, "&#039;");
+
+    const norm = (s) => (s || "")
+      .toString()
+      .trim()
+      .replace(/\s+/g, " ")
+      .toLowerCase();
+
+    const tocMap = new Map();
+    (TOC_ITEMS || []).forEach(it => {
+      if (it && it.title && it.id) tocMap.set(norm(it.title), String(it.id));
+    });
 
     const youtubeEmbed = (url) => {
       try{
@@ -1072,7 +1082,7 @@
 
       const blocks = [];
       let out = text.replace(/```([\w-]*)\n([\s\S]*?)```/g, (m, lang, code) => {
-        blocks.push({ type:"code", lang: (lang||"").trim(), code });
+        blocks.push({ lang: (lang||"").trim(), code });
         return `@@BLOCK_${blocks.length-1}@@`;
       });
 
@@ -1087,7 +1097,7 @@
       out = out
         .replace(/^######\s(.+)$/gm, "<h6>$1</h6>")
         .replace(/^#####\s(.+)$/gm, "<h5>$1</h5>")
-        .replace(/^####\s(.+)$/gm, "<h4>$1</h4>")
+        .replace/^####\s(.+)$/gm, "<h4>$1</h4>")
         .replace(/^###\s(.+)$/gm, "<h3>$1</h3>")
         .replace(/^##\s(.+)$/gm, "<h2>$1</h2>")
         .replace(/^#\s(.+)$/gm, "<h2>$1</h2>");
@@ -1116,7 +1126,6 @@
         return `<p><a href="${url}" target="_blank" rel="nofollow noopener">${url}</a></p>`;
       });
 
-      // unordered lists
       out = out.replace(/(?:^|\n)(-\s.+(?:\n-\s.+)*)/g, (m, listBlock) => {
         const items = listBlock.trim().split("\n").map(line => {
           return `<li>${line.replace(/^\-\s/, "")}</li>`;
@@ -1124,7 +1133,6 @@
         return `\n<ul>${items}</ul>`;
       });
 
-      // ordered lists
       out = out.replace(/(?:^|\n)((?:\d+\.\s.+\n?)+)/g, (m, listBlock) => {
         const lines = listBlock.trim().split("\n").filter(Boolean);
         const isOL = lines.every(l => /^\d+\.\s/.test(l));
@@ -1133,7 +1141,6 @@
         return `\n<ol>${items}</ol>`;
       });
 
-      // basic pipe tables
       out = out.replace(/((?:^\|.+\|\n)+)/gm, (m, tbl) => {
         const lines = tbl.trim().split("\n").filter(Boolean);
         if (lines.length < 2) return m;
@@ -1153,7 +1160,6 @@
         return `<table>${thead}${tbody}</table>`;
       });
 
-      // paragraphs
       const parts = out.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
       out = parts.map(p => {
         if (/^(<h\d|<ul|<ol|<pre|<blockquote|<table|<div class="embedWrap"|<img)/.test(p)) return p;
@@ -1180,7 +1186,6 @@
         });
       });
 
-      // only allow youtube embed iframes
       tmp.querySelectorAll("iframe").forEach(iframe => {
         const src = (iframe.getAttribute("src") || "").toLowerCase();
         if (!src.includes("youtube.com/embed/")) iframe.remove();
@@ -1189,11 +1194,40 @@
       return tmp.innerHTML;
     }
 
-    root.innerHTML = sanitize(mdToHtml(md));
+    function injectTocMarkers(container){
+      const headings = container.querySelectorAll("h2, h3, h4");
+      if (!headings.length) return;
+
+      let autoIndex = 1;
+      const used = new Set();
+
+      headings.forEach(h => {
+        const title = (h.textContent || "").trim();
+        if (!title) return;
+
+        let id = tocMap.get(norm(title));
+        if (!id) id = `toc-${autoIndex++}`;
+
+        if (used.has(id)) id = `toc-${autoIndex++}`;
+        used.add(id);
+
+        const marker = document.createElement("span");
+        marker.id = id;
+        marker.className = "toc-marker";
+        marker.setAttribute("data-title", title);
+
+        h.parentNode.insertBefore(marker, h);
+      });
+    }
+
+    const html = sanitize(mdToHtml(md));
+    root.innerHTML = html;
+    injectTocMarkers(root);
   })();
 
+
   /* ------------------------------------------------
-    Your existing page logic (TOC + modals + likes etc.)
+    Existing logic (TOC Jump + tracker + modal + like etc.)
   -------------------------------------------------*/
   const currentTitleEl = document.getElementById("currentSection");
 
