@@ -39,9 +39,6 @@
 
 {% block content %}
   <style>
-    /* -----------------------
-      Layout
-    ------------------------*/
     .pageSection{
       width:min(var(--wrap), calc(100vw - 28px));
       margin:0 auto;
@@ -208,28 +205,6 @@
       font-weight:800;
     }
 
-    /* পোস্ট কন্টেন্টের ভেতরের h2/h3 কে markdown-like করে দিলাম */
-    .postBody h2{
-      margin:44px 0 12px;
-      font-size:20px;
-      letter-spacing:-0.2px;
-      color:var(--text);
-      font-weight:800;
-    }
-    .postBody h3{
-      margin:26px 0 10px;
-      font-size:17px;
-      letter-spacing:-0.1px;
-      color:var(--text);
-      font-weight:800;
-    }
-    .postBody h4{
-      margin:18px 0 8px;
-      font-size:15px;
-      color:var(--text);
-      font-weight:800;
-    }
-
     /* Intro note */
     .note{
       padding:12px 12px;
@@ -248,7 +223,7 @@
       color:rgba(15,23,42,0.72);
     }
 
-    /* ✅ Intro আর content এর মাঝে premium divider/margin */
+    /* ✅ Intro এবং content এর মাঝে divider/margin */
     .introDivider{
       height:1px;
       margin:18px 0 18px;
@@ -257,12 +232,12 @@
     body:not([data-theme="dark"]) .introDivider{background: rgba(15,23,42,0.10)}
 
     /* -----------------------
-      Markdown / Rich Content Styling
-      (সব ট্যাগ সাপোর্ট করার মতো)
+      Post Body: Markdown/Rich content styles
+      (client-side markdown render -> HTML)
     ------------------------*/
     .postBody{
       margin-top:12px;
-      font-weight:300;
+      font-weight:300;          /* ✅ content একটু চিকন */
       font-size:15px;
       line-height:2.0;
       color:rgba(255,255,255,0.72);
@@ -271,13 +246,31 @@
     }
     body:not([data-theme="dark"]) .postBody{color:rgba(15,23,42,0.72)}
 
-    /* Paragraph spacing */
     .postBody p{margin:0 0 16px}
 
-    /* Links */
+    .postBody h2{
+      margin:44px 0 12px;
+      font-size:20px;
+      letter-spacing:-0.2px;
+      color:var(--text);
+      font-weight:800;
+    }
+    .postBody h3{
+      margin:26px 0 10px;
+      font-size:17px;
+      color:var(--text);
+      font-weight:800;
+    }
+    .postBody h4{
+      margin:18px 0 8px;
+      font-size:15px;
+      color:var(--text);
+      font-weight:800;
+    }
+
     .postBody a{
       color:var(--text);
-      font-weight:700;
+      font-weight:800;
       text-decoration:none;
       border-bottom:1px solid rgba(255,255,255,0.22);
       padding-bottom:1px;
@@ -285,16 +278,12 @@
     body:not([data-theme="dark"]) .postBody a{border-bottom:1px solid rgba(15,23,42,0.22)}
     .postBody a:hover{opacity:.9}
 
-    /* Strong / em */
-    .postBody strong{color:var(--text);font-weight:800}
+    .postBody strong{color:var(--text);font-weight:900}
     .postBody em{font-style:italic;opacity:.95}
 
-    /* Lists */
     .postBody ul, .postBody ol{margin:0 0 16px 18px;padding:0}
     .postBody li{margin:8px 0}
-    .postBody ul ul, .postBody ol ol{margin-top:10px}
 
-    /* Blockquote */
     .postBody blockquote{
       margin:16px 0;
       padding:12px 14px;
@@ -310,7 +299,6 @@
     }
     .postBody blockquote p{margin:0}
 
-    /* Inline code */
     .postBody code{
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 13px;
@@ -326,7 +314,6 @@
       background: rgba(15,23,42,0.04);
     }
 
-    /* Code blocks */
     .postBody pre{
       margin:16px 0;
       padding:12px 12px;
@@ -349,11 +336,10 @@
       white-space:pre;
       display:block;
       font-size:13px;
-      font-weight:500;
+      font-weight:600;
       opacity:.95;
     }
 
-    /* HR */
     .postBody hr{
       border:none;
       height:1px;
@@ -362,7 +348,6 @@
     }
     body:not([data-theme="dark"]) .postBody hr{background: rgba(15,23,42,0.10)}
 
-    /* Images */
     .postBody img{
       max-width:100%;
       height:auto;
@@ -377,7 +362,6 @@
       background: rgba(15,23,42,0.03);
     }
 
-    /* Tables (mobile friendly scroll) */
     .postBody table{
       width:100%;
       border-collapse:separate;
@@ -387,7 +371,7 @@
       border-radius:16px;
       border:1px solid rgba(255,255,255,0.10);
       background: rgba(255,255,255,0.04);
-      display:block;              /* ✅ scroll enable */
+      display:block;
       max-width:100%;
       overflow-x:auto;
       -webkit-overflow-scrolling:touch;
@@ -399,7 +383,7 @@
     .postBody thead th{
       text-align:left;
       font-size:12px;
-      font-weight:800;
+      font-weight:900;
       color:var(--text);
       padding:10px 12px;
       border-bottom:1px solid rgba(255,255,255,0.10);
@@ -421,7 +405,6 @@
     }
     .postBody tbody tr:last-child td{border-bottom:none}
 
-    /* Video / iframe embeds */
     .postBody video{
       width:100%;
       max-width:100%;
@@ -436,7 +419,6 @@
       background: rgba(15,23,42,0.03);
     }
 
-    /* Responsive embed wrapper (YouTube, etc.) */
     .embedWrap{
       position:relative;
       width:100%;
@@ -469,12 +451,11 @@
     .blockTitle{
       margin:44px 0 14px;
       font-size:18px;
-      font-weight:800;
+      font-weight:900;
       color:var(--text);
       letter-spacing:-0.2px;
     }
 
-    /* Comments & Cards (আগের মতোই) */
     .commentComposer{
       border:1px solid rgba(255,255,255,0.10);
       background: rgba(255,255,255,0.04);
@@ -875,17 +856,12 @@
           {{ post['intro'] }}
         </div>
 
-        <!-- ✅ Intro এবং Content আলাদা করার জন্য divider -->
         <div class="introDivider" aria-hidden="true"></div>
       </section>
 
       <section data-track="true" data-title="Content">
-        <!-- ✅ Markdown / rich HTML content wrapper -->
-        <div class="post-content postBody" id="postBody">
-          {% autoescape false %}
-            {{ content | replace('\n', '<br>') }}
-          {% endautoescape %}
-        </div>
+        <!-- ✅ raw markdown stored safely in data-md -->
+        <div class="post-content postBody" id="postBody" data-md="{{ content | e }}"></div>
       </section>
 
       <div class="divider"></div>
@@ -1044,6 +1020,181 @@
 
 {% block body_scripts %}
 <script>
+  /* ------------------------------------------------
+    Client-side Markdown -> HTML + Sanitizer
+    No backend required
+  -------------------------------------------------*/
+  (function(){
+    const root = document.getElementById("postBody");
+    if (!root) return;
+
+    const md = root.dataset.md || "";
+    if (!md.trim()) return;
+
+    const esc = (s) =>
+      s.replace(/&/g, "&amp;")
+       .replace(/</g, "&lt;")
+       .replace(/>/g, "&gt;")
+       .replace(/"/g, "&quot;")
+       .replace(/'/g, "&#039;");
+
+    const youtubeEmbed = (url) => {
+      try{
+        const u = new URL(url);
+        let id = "";
+        if (u.hostname.includes("youtu.be")) id = u.pathname.slice(1);
+        if (u.hostname.includes("youtube.com")) {
+          if (u.searchParams.get("v")) id = u.searchParams.get("v");
+          if (u.pathname.startsWith("/embed/")) id = u.pathname.split("/embed/")[1];
+          if (u.pathname.startsWith("/shorts/")) id = u.pathname.split("/shorts/")[1];
+        }
+        if (!id) return "";
+        id = id.split("?")[0].split("&")[0];
+        return `
+          <div class="embedWrap">
+            <iframe
+              src="https://www.youtube.com/embed/${id}"
+              title="YouTube video"
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+            ></iframe>
+          </div>
+        `;
+      }catch(e){
+        return "";
+      }
+    };
+
+    function mdToHtml(input){
+      const text = input.replace(/\r\n/g, "\n");
+
+      const blocks = [];
+      let out = text.replace(/```([\w-]*)\n([\s\S]*?)```/g, (m, lang, code) => {
+        blocks.push({ type:"code", lang: (lang||"").trim(), code });
+        return `@@BLOCK_${blocks.length-1}@@`;
+      });
+
+      out = esc(out);
+
+      out = out.replace(/@@BLOCK_(\d+)@@/g, (m, i) => {
+        const b = blocks[Number(i)];
+        const codeSafe = esc(b.code);
+        return `<pre><code>${codeSafe}</code></pre>`;
+      });
+
+      out = out
+        .replace(/^######\s(.+)$/gm, "<h6>$1</h6>")
+        .replace(/^#####\s(.+)$/gm, "<h5>$1</h5>")
+        .replace(/^####\s(.+)$/gm, "<h4>$1</h4>")
+        .replace(/^###\s(.+)$/gm, "<h3>$1</h3>")
+        .replace(/^##\s(.+)$/gm, "<h2>$1</h2>")
+        .replace(/^#\s(.+)$/gm, "<h2>$1</h2>");
+
+      out = out.replace(/^\>\s(.+)$/gm, "<blockquote><p>$1</p></blockquote>");
+
+      out = out
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.+?)\*/g, "<em>$1</em>");
+
+      out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
+
+      out = out.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, url) => {
+        const safeUrl = url.trim();
+        return `<img src="${safeUrl}" alt="${alt || "image"}" loading="lazy">`;
+      });
+
+      out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, txt, url) => {
+        const safeUrl = url.trim();
+        return `<a href="${safeUrl}" target="_blank" rel="nofollow noopener">${txt}</a>`;
+      });
+
+      out = out.replace(/^(https?:\/\/[^\s]+)$/gm, (m, url) => {
+        const embed = youtubeEmbed(url);
+        if (embed) return embed;
+        return `<p><a href="${url}" target="_blank" rel="nofollow noopener">${url}</a></p>`;
+      });
+
+      // unordered lists
+      out = out.replace(/(?:^|\n)(-\s.+(?:\n-\s.+)*)/g, (m, listBlock) => {
+        const items = listBlock.trim().split("\n").map(line => {
+          return `<li>${line.replace(/^\-\s/, "")}</li>`;
+        }).join("");
+        return `\n<ul>${items}</ul>`;
+      });
+
+      // ordered lists
+      out = out.replace(/(?:^|\n)((?:\d+\.\s.+\n?)+)/g, (m, listBlock) => {
+        const lines = listBlock.trim().split("\n").filter(Boolean);
+        const isOL = lines.every(l => /^\d+\.\s/.test(l));
+        if (!isOL) return m;
+        const items = lines.map(l => `<li>${l.replace(/^\d+\.\s/, "")}</li>`).join("");
+        return `\n<ol>${items}</ol>`;
+      });
+
+      // basic pipe tables
+      out = out.replace(/((?:^\|.+\|\n)+)/gm, (m, tbl) => {
+        const lines = tbl.trim().split("\n").filter(Boolean);
+        if (lines.length < 2) return m;
+        const sep = lines[1];
+        if (!/^\|?\s*:?-{2,}/.test(sep.replace(/\s/g,""))) return m;
+
+        const head = lines[0].split("|").map(s=>s.trim()).filter(Boolean);
+        const bodyLines = lines.slice(2);
+
+        const thead = `<thead><tr>${head.map(h=>`<th>${h}</th>`).join("")}</tr></thead>`;
+        const tbody = `<tbody>${
+          bodyLines.map(row=>{
+            const cols = row.split("|").map(s=>s.trim()).filter(Boolean);
+            return `<tr>${cols.map(c=>`<td>${c}</td>`).join("")}</tr>`;
+          }).join("")
+        }</tbody>`;
+        return `<table>${thead}${tbody}</table>`;
+      });
+
+      // paragraphs
+      const parts = out.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+      out = parts.map(p => {
+        if (/^(<h\d|<ul|<ol|<pre|<blockquote|<table|<div class="embedWrap"|<img)/.test(p)) return p;
+        return `<p>${p.replace(/\n/g, "<br>")}</p>`;
+      }).join("\n");
+
+      return out;
+    }
+
+    function sanitize(html){
+      const tmp = document.createElement("div");
+      tmp.innerHTML = html;
+
+      tmp.querySelectorAll("script, style").forEach(n => n.remove());
+
+      tmp.querySelectorAll("*").forEach(el => {
+        [...el.attributes].forEach(attr => {
+          const name = attr.name.toLowerCase();
+          const val = (attr.value || "").trim();
+          if (name.startsWith("on")) el.removeAttribute(attr.name);
+          if ((name === "href" || name === "src") && /^javascript:/i.test(val)) {
+            el.removeAttribute(attr.name);
+          }
+        });
+      });
+
+      // only allow youtube embed iframes
+      tmp.querySelectorAll("iframe").forEach(iframe => {
+        const src = (iframe.getAttribute("src") || "").toLowerCase();
+        if (!src.includes("youtube.com/embed/")) iframe.remove();
+      });
+
+      return tmp.innerHTML;
+    }
+
+    root.innerHTML = sanitize(mdToHtml(md));
+  })();
+
+  /* ------------------------------------------------
+    Your existing page logic (TOC + modals + likes etc.)
+  -------------------------------------------------*/
   const currentTitleEl = document.getElementById("currentSection");
 
   function jumpToSection(id, title){
