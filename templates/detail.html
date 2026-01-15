@@ -190,6 +190,7 @@
       border-color: rgba(255,255,255,0.18);
     }
 
+    /* --- CONTENT WRAPPER --- */
     .content{
       margin-top:14px;
       line-height:1.95;
@@ -205,238 +206,291 @@
       font-weight:800;
     }
 
-    /* Intro note */
-    .note{
-      padding:12px 12px;
-      border:1px solid rgba(255,255,255,0.10);
-      background: rgba(255,255,255,0.04);
-      margin:18px 0 0;
-      border-radius:16px;
-      color:rgba(255,255,255,0.72);
-      font-weight:300;
-      font-size:13px;
-      line-height:1.8;
-    }
-    body:not([data-theme="dark"]) .note{
-      border:1px solid rgba(15,23,42,0.10);
-      background: rgba(15,23,42,0.03);
-      color:rgba(15,23,42,0.72);
-    }
-
-    /* ✅ Intro এবং content এর মাঝে divider/margin */
-    .introDivider{
-      height:1px;
-      margin:18px 0 18px;
-      background: rgba(255,255,255,0.10);
-    }
-    body:not([data-theme="dark"]) .introDivider{background: rgba(15,23,42,0.10)}
-
-    /* -----------------------
-      Post Body: Markdown/Rich content styles
-    ------------------------*/
-    .postBody{
-      margin-top:12px;
-      font-weight:300;
-      font-size:15px;
-      line-height:2.0;
-      color:rgba(255,255,255,0.72);
-      word-break:break-word;
-      overflow-wrap:anywhere;
-    }
-    body:not([data-theme="dark"]) .postBody{color:rgba(15,23,42,0.72)}
-    .postBody p{margin:0 0 16px}
-
-    .postBody h2{
-      margin:44px 0 12px;
+    h2{
+      margin:46px 0 12px;
       font-size:20px;
       letter-spacing:-0.2px;
       color:var(--text);
       font-weight:800;
     }
-    .postBody h3{
-      margin:26px 0 10px;
-      font-size:17px;
-      color:var(--text);
-      font-weight:800;
+
+    /* Intro note stays premium */
+    .note{
+      padding:12px 12px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      margin:18px 0 10px;
+      border-radius:16px;
+      color:rgba(255,255,255,0.68);
+      font-weight:300;
+      font-size:13px;
+      line-height:1.7;
     }
-    .postBody h4{
-      margin:18px 0 8px;
+    body:not([data-theme="dark"]) .note{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+      color:rgba(15,23,42,0.70);
+    }
+
+    /* NEW: Intro + Content separator */
+    .introDivider{
+      height:1px;
+      background: rgba(255,255,255,0.10);
+      margin:18px 0 18px;
+    }
+    body:not([data-theme="dark"]) .introDivider{background: rgba(15,23,42,0.10)}
+
+    /* --- PREMIUM TYPOGRAPHY FOR POST CONTENT --- */
+    .post-content{
+      /* Content should feel slightly thinner than headings */
       font-size:15px;
-      color:var(--text);
-      font-weight:800;
+      font-weight:300;
+      line-height:1.95;
+      color:rgba(255,255,255,0.72);
+      word-break:break-word;
+    }
+    body:not([data-theme="dark"]) .post-content{
+      color:rgba(15,23,42,0.72);
     }
 
-    .postBody a{
-      color:var(--text);
+    /* Reset margins for rich content */
+    .post-content > *{margin:0 0 16px}
+    .post-content > *:last-child{margin-bottom:0}
+
+    /* Paragraphs / inline formatting */
+    .post-content p{
+      margin:0 0 16px;
+      font-size:15px;
+      font-weight:300;
+      color:inherit;
+    }
+
+    .post-content strong{
       font-weight:800;
+      color:var(--text);
+    }
+    .post-content em{
+      font-style:italic;
+      opacity:.95;
+    }
+    .post-content u{
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .post-content s, .post-content del{
+      opacity:.75;
+    }
+    .post-content mark{
+      padding:0 .2em;
+      border-radius:6px;
+      background: rgba(255,255,255,0.14);
+      color: var(--text);
+    }
+    body:not([data-theme="dark"]) .post-content mark{
+      background: rgba(15,23,42,0.08);
+    }
+
+    /* Links */
+    .post-content a{
+      color: var(--text);
+      font-weight:700;
       text-decoration:none;
-      border-bottom:1px solid rgba(255,255,255,0.22);
-      padding-bottom:1px;
+      border-bottom:1px solid rgba(255,255,255,0.18);
     }
-    body:not([data-theme="dark"]) .postBody a{border-bottom:1px solid rgba(15,23,42,0.22)}
-    .postBody a:hover{opacity:.9}
+    body:not([data-theme="dark"]) .post-content a{
+      border-bottom:1px solid rgba(15,23,42,0.18);
+    }
+    .post-content a:active{opacity:.85}
 
-    .postBody strong{color:var(--text);font-weight:900}
-    .postBody em{font-style:italic;opacity:.95}
+    /* Headings inside content (if user uses h2/h3 etc) */
+    .post-content h1,
+    .post-content h2,
+    .post-content h3,
+    .post-content h4{
+      color: var(--text);
+      font-weight:900;
+      letter-spacing:-0.2px;
+      margin:34px 0 12px;
+      line-height:1.3;
+    }
+    .post-content h1{font-size:22px;margin-top:34px}
+    .post-content h2{font-size:20px}
+    .post-content h3{font-size:18px}
+    .post-content h4{font-size:16px}
 
-    .postBody ul, .postBody ol{margin:0 0 16px 18px;padding:0}
-    .postBody li{margin:8px 0}
+    /* Lists */
+    .post-content ul,
+    .post-content ol{
+      margin:0 0 16px 18px;
+      padding:0;
+    }
+    .post-content li{
+      margin:8px 0;
+      color:inherit;
+      font-weight:300;
+      font-size:15px;
+    }
+    .post-content li::marker{opacity:.75}
 
-    .postBody blockquote{
-      margin:16px 0;
-      padding:12px 14px;
+    /* Blockquote */
+    .post-content blockquote{
+      margin:18px 0;
+      padding:12px 12px;
       border-radius:16px;
       border:1px solid rgba(255,255,255,0.10);
       background: rgba(255,255,255,0.04);
-      color:rgba(255,255,255,0.70);
+      color: rgba(255,255,255,0.78);
+      position:relative;
     }
-    body:not([data-theme="dark"]) .postBody blockquote{
+    body:not([data-theme="dark"]) .post-content blockquote{
       border:1px solid rgba(15,23,42,0.10);
       background: rgba(15,23,42,0.03);
-      color:rgba(15,23,42,0.72);
+      color: rgba(15,23,42,0.74);
     }
-    .postBody blockquote p{margin:0}
+    .post-content blockquote p{margin:0}
 
-    .postBody code{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    /* Code (inline + block) */
+    .post-content code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
       font-size: 13px;
-      padding:2px 7px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,0.12);
+      padding: 2px 6px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.10);
       background: rgba(255,255,255,0.06);
       color: var(--text);
-      white-space: break-spaces;
+      font-weight:600;
     }
-    body:not([data-theme="dark"]) .postBody code{
-      border:1px solid rgba(15,23,42,0.12);
+    body:not([data-theme="dark"]) .post-content code{
+      border: 1px solid rgba(15,23,42,0.10);
       background: rgba(15,23,42,0.04);
     }
 
-    .postBody pre{
-      margin:16px 0;
-      padding:12px 12px;
+    .post-content pre{
+      margin:18px 0;
+      padding:12px;
       border-radius:18px;
-      border:1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.06);
       overflow:auto;
-      -webkit-overflow-scrolling:touch;
-      line-height:1.7;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
     }
-    body:not([data-theme="dark"]) .postBody pre{
-      border:1px solid rgba(15,23,42,0.12);
-      background: rgba(15,23,42,0.04);
+    body:not([data-theme="dark"]) .post-content pre{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
     }
-    .postBody pre code{
+    .post-content pre code{
+      display:block;
+      padding:0;
       border:none;
       background:transparent;
-      padding:0;
-      border-radius:0;
-      white-space:pre;
-      display:block;
       font-size:13px;
-      font-weight:600;
-      opacity:.95;
+      font-weight:500;
+      line-height:1.7;
+      color: rgba(255,255,255,0.86);
+    }
+    body:not([data-theme="dark"]) .post-content pre code{
+      color: rgba(15,23,42,0.86);
     }
 
-    .postBody hr{
+    /* Tables */
+    .post-content .tableWrap{
+      width:100%;
+      overflow:auto;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      margin:18px 0;
+    }
+    body:not([data-theme="dark"]) .post-content .tableWrap{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+    .post-content table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:520px; /* makes horizontal scroll on mobile */
+    }
+    .post-content th, .post-content td{
+      padding:10px 12px;
+      text-align:left;
+      border-bottom:1px solid rgba(255,255,255,0.10);
+      font-size:13px;
+      font-weight:300;
+      color: rgba(255,255,255,0.78);
+      vertical-align:top;
+    }
+    body:not([data-theme="dark"]) .post-content th,
+    body:not([data-theme="dark"]) .post-content td{
+      border-bottom:1px solid rgba(15,23,42,0.10);
+      color: rgba(15,23,42,0.72);
+    }
+    .post-content th{
+      font-weight:800;
+      color: var(--text);
+      position:sticky;
+      top:0;
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(6px);
+    }
+    body:not([data-theme="dark"]) .post-content th{
+      background: rgba(15,23,42,0.03);
+    }
+    .post-content tr:last-child td{border-bottom:none}
+
+    /* Images */
+    .post-content img{
+      max-width:100%;
+      height:auto;
+      display:block;
+      border-radius:18px;
+      margin:18px 0;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+    }
+    body:not([data-theme="dark"]) .post-content img{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+
+    /* Video / iframe embeds */
+    .post-content video{
+      width:100%;
+      max-width:100%;
+      border-radius:18px;
+      margin:18px 0;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      display:block;
+    }
+    body:not([data-theme="dark"]) .post-content video{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+
+    .post-content iframe{
+      width:100%;
+      max-width:100%;
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:18px;
+      background: rgba(255,255,255,0.04);
+      margin:18px 0;
+      display:block;
+      aspect-ratio: 16 / 9;
+      height:auto;
+    }
+    body:not([data-theme="dark"]) .post-content iframe{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+
+    /* Horizontal rules inside content */
+    .post-content hr{
       border:none;
       height:1px;
       background: rgba(255,255,255,0.10);
       margin:22px 0;
     }
-    body:not([data-theme="dark"]) .postBody hr{background: rgba(15,23,42,0.10)}
-
-    .postBody img{
-      max-width:100%;
-      height:auto;
-      display:block;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,0.10);
-      background: rgba(255,255,255,0.04);
-      margin:14px auto;
-    }
-    body:not([data-theme="dark"]) .postBody img{
-      border:1px solid rgba(15,23,42,0.10);
-      background: rgba(15,23,42,0.03);
-    }
-
-    .postBody table{
-      width:100%;
-      border-collapse:separate;
-      border-spacing:0;
-      margin:16px 0;
-      overflow:hidden;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,0.10);
-      background: rgba(255,255,255,0.04);
-      display:block;
-      max-width:100%;
-      overflow-x:auto;
-      -webkit-overflow-scrolling:touch;
-    }
-    body:not([data-theme="dark"]) .postBody table{
-      border:1px solid rgba(15,23,42,0.10);
-      background: rgba(15,23,42,0.03);
-    }
-    .postBody thead th{
-      text-align:left;
-      font-size:12px;
-      font-weight:900;
-      color:var(--text);
-      padding:10px 12px;
-      border-bottom:1px solid rgba(255,255,255,0.10);
-      background: rgba(255,255,255,0.06);
-      white-space:nowrap;
-    }
-    body:not([data-theme="dark"]) .postBody thead th{
-      border-bottom:1px solid rgba(15,23,42,0.10);
-      background: rgba(15,23,42,0.05);
-    }
-    .postBody tbody td{
-      padding:10px 12px;
-      font-size:13px;
-      border-bottom:1px solid rgba(255,255,255,0.08);
-      white-space:nowrap;
-    }
-    body:not([data-theme="dark"]) .postBody tbody td{
-      border-bottom:1px solid rgba(15,23,42,0.08);
-    }
-    .postBody tbody tr:last-child td{border-bottom:none}
-
-    .postBody video{
-      width:100%;
-      max-width:100%;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,0.10);
-      background: rgba(255,255,255,0.04);
-      margin:14px 0;
-      display:block;
-    }
-    body:not([data-theme="dark"]) .postBody video{
-      border:1px solid rgba(15,23,42,0.10);
-      background: rgba(15,23,42,0.03);
-    }
-
-    .embedWrap{
-      position:relative;
-      width:100%;
-      padding-top:56.25%;
-      border-radius:18px;
-      overflow:hidden;
-      border:1px solid rgba(255,255,255,0.10);
-      background: rgba(255,255,255,0.04);
-      margin:14px 0;
-    }
-    body:not([data-theme="dark"]) .embedWrap{
-      border:1px solid rgba(15,23,42,0.10);
-      background: rgba(15,23,42,0.03);
-    }
-    .embedWrap iframe{
-      position:absolute;
-      inset:0;
-      width:100%;
-      height:100%;
-      border:0;
+    body:not([data-theme="dark"]) .post-content hr{
+      background: rgba(15,23,42,0.10);
     }
 
     .divider{
@@ -486,7 +540,7 @@
     }
     .composerName{
       font-size:13px;
-      font-weight:600;
+      font-weight:500;
       color:var(--text);
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     }
@@ -541,7 +595,7 @@
       padding:8px 10px;border-radius:12px;
       font-family:inherit;
       font-size:12px;
-      font-weight:600;
+      font-weight:500;
     }
     body:not([data-theme="dark"]) .ghostBtn{color:rgba(15,23,42,0.70)}
     .ghostBtn:hover{background: rgba(255,255,255,0.08)}
@@ -557,7 +611,7 @@
       color:var(--text);
       font-family:inherit;
       font-size:12px;
-      font-weight:900;
+      font-weight:800;
     }
     body:not([data-theme="dark"]) .primaryBtn{
       background: rgba(15,23,42,0.08);
@@ -593,7 +647,7 @@
       background: rgba(15,23,42,0.04);
     }
     .cName{
-      font-size:13px;font-weight:600;color:var(--text);
+      font-size:13px;font-weight:500;color:var(--text);
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
       max-width:220px;
     }
@@ -638,7 +692,7 @@
 
     .loveCount{
       font-size:12px;
-      font-weight:600;
+      font-weight:500;
       color:rgba(255,255,255,0.62);
       min-width:10px;
       text-align:left;
@@ -691,7 +745,7 @@
     .relBody{padding:12px}
     .relTitle{
       font-size:13.5px;
-      font-weight:900;
+      font-weight:800;
       color:var(--text);
       line-height:1.35;
       margin-bottom:8px;
@@ -853,13 +907,17 @@
         <div class="note" style="margin-top:12px">
           {{ post['intro'] }}
         </div>
-
-        <div class="introDivider" aria-hidden="true"></div>
       </section>
 
+      <!-- NEW: intro/content separation (visual margin + divider) -->
+      <div class="introDivider" aria-hidden="true"></div>
+
       <section data-track="true" data-title="Content">
-        <!-- ✅ raw markdown stored safely in data-md -->
-        <div class="post-content postBody" id="postBody" data-md="{{ content | e }}"></div>
+        <div class="post-content">
+          {% autoescape false %}
+            {{ content | replace('\n', '<br>') }}
+          {% endautoescape %}
+        </div>
       </section>
 
       <div class="divider"></div>
@@ -1018,217 +1076,6 @@
 
 {% block body_scripts %}
 <script>
-  /* ------------------------------------------------
-    ✅ Client-side Markdown -> HTML + Sanitizer
-    ✅ + RESTORE TOC MARKERS (toc-1, toc-2...)
-  -------------------------------------------------*/
-  (function(){
-    const root = document.getElementById("postBody");
-    if (!root) return;
-
-    const TOC_ITEMS = {{ (toc_items or []) | tojson }};
-    const md = root.dataset.md || "";
-    if (!md.trim()) return;
-
-    const esc = (s) =>
-      s.replace(/&/g, "&amp;")
-       .replace(/</g, "&lt;")
-       .replace(/>/g, "&gt;")
-       .replace(/"/g, "&quot;")
-       .replace(/'/g, "&#039;");
-
-    const norm = (s) => (s || "")
-      .toString()
-      .trim()
-      .replace(/\s+/g, " ")
-      .toLowerCase();
-
-    const tocMap = new Map();
-    (TOC_ITEMS || []).forEach(it => {
-      if (it && it.title && it.id) tocMap.set(norm(it.title), String(it.id));
-    });
-
-    const youtubeEmbed = (url) => {
-      try{
-        const u = new URL(url);
-        let id = "";
-        if (u.hostname.includes("youtu.be")) id = u.pathname.slice(1);
-        if (u.hostname.includes("youtube.com")) {
-          if (u.searchParams.get("v")) id = u.searchParams.get("v");
-          if (u.pathname.startsWith("/embed/")) id = u.pathname.split("/embed/")[1];
-          if (u.pathname.startsWith("/shorts/")) id = u.pathname.split("/shorts/")[1];
-        }
-        if (!id) return "";
-        id = id.split("?")[0].split("&")[0];
-        return `
-          <div class="embedWrap">
-            <iframe
-              src="https://www.youtube.com/embed/${id}"
-              title="YouTube video"
-              loading="lazy"
-              referrerpolicy="strict-origin-when-cross-origin"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowfullscreen
-            ></iframe>
-          </div>
-        `;
-      }catch(e){
-        return "";
-      }
-    };
-
-    function mdToHtml(input){
-      const text = input.replace(/\r\n/g, "\n");
-
-      const blocks = [];
-      let out = text.replace(/```([\w-]*)\n([\s\S]*?)```/g, (m, lang, code) => {
-        blocks.push({ lang: (lang||"").trim(), code });
-        return `@@BLOCK_${blocks.length-1}@@`;
-      });
-
-      out = esc(out);
-
-      out = out.replace(/@@BLOCK_(\d+)@@/g, (m, i) => {
-        const b = blocks[Number(i)];
-        const codeSafe = esc(b.code);
-        return `<pre><code>${codeSafe}</code></pre>`;
-      });
-
-      out = out
-        .replace(/^######\s(.+)$/gm, "<h6>$1</h6>")
-        .replace(/^#####\s(.+)$/gm, "<h5>$1</h5>")
-        .replace/^####\s(.+)$/gm, "<h4>$1</h4>")
-        .replace(/^###\s(.+)$/gm, "<h3>$1</h3>")
-        .replace(/^##\s(.+)$/gm, "<h2>$1</h2>")
-        .replace(/^#\s(.+)$/gm, "<h2>$1</h2>");
-
-      out = out.replace(/^\>\s(.+)$/gm, "<blockquote><p>$1</p></blockquote>");
-
-      out = out
-        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-        .replace(/\*(.+?)\*/g, "<em>$1</em>");
-
-      out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
-
-      out = out.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, url) => {
-        const safeUrl = url.trim();
-        return `<img src="${safeUrl}" alt="${alt || "image"}" loading="lazy">`;
-      });
-
-      out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, txt, url) => {
-        const safeUrl = url.trim();
-        return `<a href="${safeUrl}" target="_blank" rel="nofollow noopener">${txt}</a>`;
-      });
-
-      out = out.replace(/^(https?:\/\/[^\s]+)$/gm, (m, url) => {
-        const embed = youtubeEmbed(url);
-        if (embed) return embed;
-        return `<p><a href="${url}" target="_blank" rel="nofollow noopener">${url}</a></p>`;
-      });
-
-      out = out.replace(/(?:^|\n)(-\s.+(?:\n-\s.+)*)/g, (m, listBlock) => {
-        const items = listBlock.trim().split("\n").map(line => {
-          return `<li>${line.replace(/^\-\s/, "")}</li>`;
-        }).join("");
-        return `\n<ul>${items}</ul>`;
-      });
-
-      out = out.replace(/(?:^|\n)((?:\d+\.\s.+\n?)+)/g, (m, listBlock) => {
-        const lines = listBlock.trim().split("\n").filter(Boolean);
-        const isOL = lines.every(l => /^\d+\.\s/.test(l));
-        if (!isOL) return m;
-        const items = lines.map(l => `<li>${l.replace(/^\d+\.\s/, "")}</li>`).join("");
-        return `\n<ol>${items}</ol>`;
-      });
-
-      out = out.replace(/((?:^\|.+\|\n)+)/gm, (m, tbl) => {
-        const lines = tbl.trim().split("\n").filter(Boolean);
-        if (lines.length < 2) return m;
-        const sep = lines[1];
-        if (!/^\|?\s*:?-{2,}/.test(sep.replace(/\s/g,""))) return m;
-
-        const head = lines[0].split("|").map(s=>s.trim()).filter(Boolean);
-        const bodyLines = lines.slice(2);
-
-        const thead = `<thead><tr>${head.map(h=>`<th>${h}</th>`).join("")}</tr></thead>`;
-        const tbody = `<tbody>${
-          bodyLines.map(row=>{
-            const cols = row.split("|").map(s=>s.trim()).filter(Boolean);
-            return `<tr>${cols.map(c=>`<td>${c}</td>`).join("")}</tr>`;
-          }).join("")
-        }</tbody>`;
-        return `<table>${thead}${tbody}</table>`;
-      });
-
-      const parts = out.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
-      out = parts.map(p => {
-        if (/^(<h\d|<ul|<ol|<pre|<blockquote|<table|<div class="embedWrap"|<img)/.test(p)) return p;
-        return `<p>${p.replace(/\n/g, "<br>")}</p>`;
-      }).join("\n");
-
-      return out;
-    }
-
-    function sanitize(html){
-      const tmp = document.createElement("div");
-      tmp.innerHTML = html;
-
-      tmp.querySelectorAll("script, style").forEach(n => n.remove());
-
-      tmp.querySelectorAll("*").forEach(el => {
-        [...el.attributes].forEach(attr => {
-          const name = attr.name.toLowerCase();
-          const val = (attr.value || "").trim();
-          if (name.startsWith("on")) el.removeAttribute(attr.name);
-          if ((name === "href" || name === "src") && /^javascript:/i.test(val)) {
-            el.removeAttribute(attr.name);
-          }
-        });
-      });
-
-      tmp.querySelectorAll("iframe").forEach(iframe => {
-        const src = (iframe.getAttribute("src") || "").toLowerCase();
-        if (!src.includes("youtube.com/embed/")) iframe.remove();
-      });
-
-      return tmp.innerHTML;
-    }
-
-    function injectTocMarkers(container){
-      const headings = container.querySelectorAll("h2, h3, h4");
-      if (!headings.length) return;
-
-      let autoIndex = 1;
-      const used = new Set();
-
-      headings.forEach(h => {
-        const title = (h.textContent || "").trim();
-        if (!title) return;
-
-        let id = tocMap.get(norm(title));
-        if (!id) id = `toc-${autoIndex++}`;
-
-        if (used.has(id)) id = `toc-${autoIndex++}`;
-        used.add(id);
-
-        const marker = document.createElement("span");
-        marker.id = id;
-        marker.className = "toc-marker";
-        marker.setAttribute("data-title", title);
-
-        h.parentNode.insertBefore(marker, h);
-      });
-    }
-
-    const html = sanitize(mdToHtml(md));
-    root.innerHTML = html;
-    injectTocMarkers(root);
-  })();
-
-
-  /* ------------------------------------------------
-    Existing logic (TOC Jump + tracker + modal + like etc.)
-  -------------------------------------------------*/
   const currentTitleEl = document.getElementById("currentSection");
 
   function jumpToSection(id, title){
@@ -1401,5 +1248,19 @@
   window.jumpToSection = jumpToSection;
   window.openReportModal = openReportModal;
   window.closeReportModal = closeReportModal;
+
+  // OPTIONAL helper: wrap tables for mobile scroll (keeps premium look)
+  // This does NOT affect TOC/Tracker features.
+  (function wrapTables(){
+    const root = document.querySelector(".post-content");
+    if (!root) return;
+    root.querySelectorAll("table").forEach(tbl => {
+      if (tbl.closest(".tableWrap")) return;
+      const wrap = document.createElement("div");
+      wrap.className = "tableWrap";
+      tbl.parentNode.insertBefore(wrap, tbl);
+      wrap.appendChild(tbl);
+    });
+  })();
 </script>
 {% endblock %}
