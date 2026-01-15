@@ -1,3 +1,9 @@
+নিচে পুরো detail template একসাথে দিলাম (Tight spacing + premium typography + TOC আগের মতোই কাজ করবে)। তুমি একদম কপি–পেস্ট করতে পারবে।
+
+> নোট: আমি তোমার JS/TOC logic বদলাইনি। শুধু CSS/typography টাইট করেছি + toc-marker যেন gap না বানায় সেটা ঠিক করেছি।
+
+
+
 {% extends 'base.html' %}
 
 {% block title %}{{ post['title'] }} • Writo{% endblock %}
@@ -190,62 +196,61 @@
       border-color: rgba(255,255,255,0.18);
     }
 
-    /* --- CONTENT WRAPPER --- */
     .content{
       margin-top:14px;
-      line-height:1.95;
       padding-left:10px;
       padding-right:10px;
     }
 
+    /* --- ✅ TOC markers must not create vertical gaps --- */
+    .toc-marker{
+      display:block;
+      height:0 !important;
+      margin:0 !important;
+      padding:0 !important;
+      border:0 !important;
+    }
+
     h1{
-      margin:0 0 12px;
+      margin:0 0 10px;
       font-size:22px;
       letter-spacing:-0.3px;
       color:var(--text);
-      font-weight:800;
+      font-weight:900;
+      line-height:1.2;
     }
 
-    h2{
-      margin:46px 0 12px;
-      font-size:20px;
-      letter-spacing:-0.2px;
-      color:var(--text);
-      font-weight:800;
-    }
-
-    /* Intro note stays premium */
+    /* Intro note (tight) */
     .note{
       padding:12px 12px;
       border:1px solid rgba(255,255,255,0.10);
       background: rgba(255,255,255,0.04);
-      margin:18px 0 10px;
+      margin:10px 0 12px;
       border-radius:16px;
-      color:rgba(255,255,255,0.68);
+      color:rgba(255,255,255,0.70);
       font-weight:300;
       font-size:13px;
-      line-height:1.7;
+      line-height:1.6;
     }
     body:not([data-theme="dark"]) .note{
       border:1px solid rgba(15,23,42,0.10);
       background: rgba(15,23,42,0.03);
-      color:rgba(15,23,42,0.70);
+      color:rgba(15,23,42,0.72);
     }
 
-    /* NEW: Intro + Content separator */
+    /* Intro/Content separator */
     .introDivider{
       height:1px;
       background: rgba(255,255,255,0.10);
-      margin:18px 0 18px;
+      margin:10px 0 12px;
     }
     body:not([data-theme="dark"]) .introDivider{background: rgba(15,23,42,0.10)}
 
-    /* --- PREMIUM TYPOGRAPHY FOR POST CONTENT --- */
+    /* --- ✅ PREMIUM + TIGHT TYPOGRAPHY FOR POST CONTENT --- */
     .post-content{
-      /* Content should feel slightly thinner than headings */
       font-size:15px;
       font-weight:300;
-      line-height:1.95;
+      line-height:1.72;          /* tighter */
       color:rgba(255,255,255,0.72);
       word-break:break-word;
     }
@@ -253,47 +258,34 @@
       color:rgba(15,23,42,0.72);
     }
 
-    /* Reset margins for rich content */
-    .post-content > *{margin:0 0 16px}
-    .post-content > *:last-child{margin-bottom:0}
+    /* Tight block spacing */
+    .post-content > *{ margin:0 0 12px; }
+    .post-content > *:last-child{ margin-bottom:0; }
 
-    /* Paragraphs / inline formatting */
     .post-content p{
-      margin:0 0 16px;
+      margin:0 0 12px;
+      color:inherit;
       font-size:15px;
       font-weight:300;
-      color:inherit;
     }
 
-    .post-content strong{
-      font-weight:800;
-      color:var(--text);
-    }
-    .post-content em{
-      font-style:italic;
-      opacity:.95;
-    }
-    .post-content u{
-      text-decoration: underline;
-      text-underline-offset: 3px;
-    }
-    .post-content s, .post-content del{
-      opacity:.75;
-    }
+    /* Inline format support */
+    .post-content strong{font-weight:900;color:var(--text)}
+    .post-content em{font-style:italic;opacity:.95}
+    .post-content u{text-decoration: underline;text-underline-offset:3px}
+    .post-content s, .post-content del{opacity:.75}
     .post-content mark{
       padding:0 .2em;
       border-radius:6px;
       background: rgba(255,255,255,0.14);
       color: var(--text);
     }
-    body:not([data-theme="dark"]) .post-content mark{
-      background: rgba(15,23,42,0.08);
-    }
+    body:not([data-theme="dark"]) .post-content mark{background: rgba(15,23,42,0.08)}
 
     /* Links */
     .post-content a{
       color: var(--text);
-      font-weight:700;
+      font-weight:800;
       text-decoration:none;
       border-bottom:1px solid rgba(255,255,255,0.18);
     }
@@ -302,7 +294,7 @@
     }
     .post-content a:active{opacity:.85}
 
-    /* Headings inside content (if user uses h2/h3 etc) */
+    /* Headings inside content (tight) */
     .post-content h1,
     .post-content h2,
     .post-content h3,
@@ -310,10 +302,9 @@
       color: var(--text);
       font-weight:900;
       letter-spacing:-0.2px;
-      margin:34px 0 12px;
-      line-height:1.3;
+      margin:22px 0 10px;
+      line-height:1.22;
     }
-    .post-content h1{font-size:22px;margin-top:34px}
     .post-content h2{font-size:20px}
     .post-content h3{font-size:18px}
     .post-content h4{font-size:16px}
@@ -321,11 +312,11 @@
     /* Lists */
     .post-content ul,
     .post-content ol{
-      margin:0 0 16px 18px;
+      margin:0 0 12px 18px;
       padding:0;
     }
     .post-content li{
-      margin:8px 0;
+      margin:6px 0;
       color:inherit;
       font-weight:300;
       font-size:15px;
@@ -334,13 +325,12 @@
 
     /* Blockquote */
     .post-content blockquote{
-      margin:18px 0;
+      margin:14px 0;
       padding:12px 12px;
       border-radius:16px;
       border:1px solid rgba(255,255,255,0.10);
       background: rgba(255,255,255,0.04);
       color: rgba(255,255,255,0.78);
-      position:relative;
     }
     body:not([data-theme="dark"]) .post-content blockquote{
       border:1px solid rgba(15,23,42,0.10);
@@ -349,7 +339,7 @@
     }
     .post-content blockquote p{margin:0}
 
-    /* Code (inline + block) */
+    /* Code */
     .post-content code{
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
       font-size: 13px;
@@ -358,7 +348,7 @@
       border: 1px solid rgba(255,255,255,0.10);
       background: rgba(255,255,255,0.06);
       color: var(--text);
-      font-weight:600;
+      font-weight:700;
     }
     body:not([data-theme="dark"]) .post-content code{
       border: 1px solid rgba(15,23,42,0.10);
@@ -366,7 +356,7 @@
     }
 
     .post-content pre{
-      margin:18px 0;
+      margin:14px 0;
       padding:12px;
       border-radius:18px;
       overflow:auto;
@@ -383,22 +373,22 @@
       border:none;
       background:transparent;
       font-size:13px;
-      font-weight:500;
-      line-height:1.7;
+      font-weight:600;
+      line-height:1.65;
       color: rgba(255,255,255,0.86);
     }
     body:not([data-theme="dark"]) .post-content pre code{
       color: rgba(15,23,42,0.86);
     }
 
-    /* Tables */
+    /* Tables (mobile premium) */
     .post-content .tableWrap{
       width:100%;
       overflow:auto;
       border-radius:18px;
       border:1px solid rgba(255,255,255,0.10);
       background: rgba(255,255,255,0.04);
-      margin:18px 0;
+      margin:14px 0;
     }
     body:not([data-theme="dark"]) .post-content .tableWrap{
       border:1px solid rgba(15,23,42,0.10);
@@ -407,7 +397,7 @@
     .post-content table{
       width:100%;
       border-collapse:collapse;
-      min-width:520px; /* makes horizontal scroll on mobile */
+      min-width:520px;
     }
     .post-content th, .post-content td{
       padding:10px 12px;
@@ -424,7 +414,7 @@
       color: rgba(15,23,42,0.72);
     }
     .post-content th{
-      font-weight:800;
+      font-weight:900;
       color: var(--text);
       position:sticky;
       top:0;
@@ -436,13 +426,13 @@
     }
     .post-content tr:last-child td{border-bottom:none}
 
-    /* Images */
+    /* Media */
     .post-content img{
       max-width:100%;
       height:auto;
       display:block;
       border-radius:18px;
-      margin:18px 0;
+      margin:14px 0;
       border:1px solid rgba(255,255,255,0.10);
       background: rgba(255,255,255,0.04);
     }
@@ -451,12 +441,11 @@
       background: rgba(15,23,42,0.03);
     }
 
-    /* Video / iframe embeds */
     .post-content video{
       width:100%;
       max-width:100%;
       border-radius:18px;
-      margin:18px 0;
+      margin:14px 0;
       border:1px solid rgba(255,255,255,0.10);
       background: rgba(255,255,255,0.04);
       display:block;
@@ -472,7 +461,7 @@
       border:1px solid rgba(255,255,255,0.10);
       border-radius:18px;
       background: rgba(255,255,255,0.04);
-      margin:18px 0;
+      margin:14px 0;
       display:block;
       aspect-ratio: 16 / 9;
       height:auto;
@@ -482,12 +471,11 @@
       background: rgba(15,23,42,0.03);
     }
 
-    /* Horizontal rules inside content */
     .post-content hr{
       border:none;
       height:1px;
       background: rgba(255,255,255,0.10);
-      margin:22px 0;
+      margin:14px 0;
     }
     body:not([data-theme="dark"]) .post-content hr{
       background: rgba(15,23,42,0.10);
@@ -496,12 +484,12 @@
     .divider{
       height:1px;
       background: rgba(255,255,255,0.10);
-      margin:34px 0;
+      margin:22px 0;
     }
     body:not([data-theme="dark"]) .divider{background: rgba(15,23,42,0.10)}
 
     .blockTitle{
-      margin:44px 0 14px;
+      margin:32px 0 12px;
       font-size:18px;
       font-weight:900;
       color:var(--text);
@@ -611,7 +599,7 @@
       color:var(--text);
       font-family:inherit;
       font-size:12px;
-      font-weight:800;
+      font-weight:900;
     }
     body:not([data-theme="dark"]) .primaryBtn{
       background: rgba(15,23,42,0.08);
@@ -657,7 +645,7 @@
     .cBody{
       font-size:13px;
       font-weight:300;
-      line-height:1.7;
+      line-height:1.65;
       color:rgba(255,255,255,0.72);
       word-break:break-word;
     }
@@ -702,7 +690,7 @@
     .miniIconBtn[data-on="true"] i{color:#ff4d6d;}
     body:not([data-theme="dark"]) .miniIconBtn[data-on="true"] i{color:#ff3b66;}
 
-    .relatedWrap{margin-top:44px}
+    .relatedWrap{margin-top:34px}
     .relatedGrid{
       margin-top:12px;
       display:grid;
@@ -745,7 +733,7 @@
     .relBody{padding:12px}
     .relTitle{
       font-size:13.5px;
-      font-weight:800;
+      font-weight:900;
       color:var(--text);
       line-height:1.35;
       margin-bottom:8px;
@@ -909,7 +897,6 @@
         </div>
       </section>
 
-      <!-- NEW: intro/content separation (visual margin + divider) -->
       <div class="introDivider" aria-hidden="true"></div>
 
       <section data-track="true" data-title="Content">
@@ -1249,8 +1236,7 @@
   window.openReportModal = openReportModal;
   window.closeReportModal = closeReportModal;
 
-  // OPTIONAL helper: wrap tables for mobile scroll (keeps premium look)
-  // This does NOT affect TOC/Tracker features.
+  /* Wrap tables for mobile horizontal scroll (premium) */
   (function wrapTables(){
     const root = document.querySelector(".post-content");
     if (!root) return;
