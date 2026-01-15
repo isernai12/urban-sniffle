@@ -25,7 +25,8 @@
             cursor:pointer;
             font-weight:700;
             font-size:13px;
-          ">
+          "
+        >
           {{ item.title }}
         </button>
       {% endfor %}
@@ -38,6 +39,9 @@
 
 {% block content %}
   <style>
+    /* -----------------------
+      Layout
+    ------------------------*/
     .pageSection{
       width:min(var(--wrap), calc(100vw - 28px));
       margin:0 auto;
@@ -201,31 +205,260 @@
       font-size:22px;
       letter-spacing:-0.3px;
       color:var(--text);
-      font-weight:700;
+      font-weight:800;
     }
 
-    h2{
-      margin:46px 0 12px;
+    /* পোস্ট কন্টেন্টের ভেতরের h2/h3 কে markdown-like করে দিলাম */
+    .postBody h2{
+      margin:44px 0 12px;
       font-size:20px;
       letter-spacing:-0.2px;
       color:var(--text);
+      font-weight:800;
+    }
+    .postBody h3{
+      margin:26px 0 10px;
+      font-size:17px;
+      letter-spacing:-0.1px;
+      color:var(--text);
+      font-weight:800;
+    }
+    .postBody h4{
+      margin:18px 0 8px;
+      font-size:15px;
+      color:var(--text);
+      font-weight:800;
+    }
+
+    /* Intro note */
+    .note{
+      padding:12px 12px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      margin:18px 0 0;
+      border-radius:16px;
+      color:rgba(255,255,255,0.72);
+      font-weight:300;
+      font-size:13px;
+      line-height:1.8;
+    }
+    body:not([data-theme="dark"]) .note{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+      color:rgba(15,23,42,0.72);
+    }
+
+    /* ✅ Intro আর content এর মাঝে premium divider/margin */
+    .introDivider{
+      height:1px;
+      margin:18px 0 18px;
+      background: rgba(255,255,255,0.10);
+    }
+    body:not([data-theme="dark"]) .introDivider{background: rgba(15,23,42,0.10)}
+
+    /* -----------------------
+      Markdown / Rich Content Styling
+      (সব ট্যাগ সাপোর্ট করার মতো)
+    ------------------------*/
+    .postBody{
+      margin-top:12px;
+      font-weight:300;
+      font-size:15px;
+      line-height:2.0;
+      color:rgba(255,255,255,0.72);
+      word-break:break-word;
+      overflow-wrap:anywhere;
+    }
+    body:not([data-theme="dark"]) .postBody{color:rgba(15,23,42,0.72)}
+
+    /* Paragraph spacing */
+    .postBody p{margin:0 0 16px}
+
+    /* Links */
+    .postBody a{
+      color:var(--text);
       font-weight:700;
+      text-decoration:none;
+      border-bottom:1px solid rgba(255,255,255,0.22);
+      padding-bottom:1px;
     }
-    p{
-      margin:0 0 16px;
-      color:rgba(255,255,255,0.72);
-      font-weight:300;
-      font-size:15px;
+    body:not([data-theme="dark"]) .postBody a{border-bottom:1px solid rgba(15,23,42,0.22)}
+    .postBody a:hover{opacity:.9}
+
+    /* Strong / em */
+    .postBody strong{color:var(--text);font-weight:800}
+    .postBody em{font-style:italic;opacity:.95}
+
+    /* Lists */
+    .postBody ul, .postBody ol{margin:0 0 16px 18px;padding:0}
+    .postBody li{margin:8px 0}
+    .postBody ul ul, .postBody ol ol{margin-top:10px}
+
+    /* Blockquote */
+    .postBody blockquote{
+      margin:16px 0;
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      color:rgba(255,255,255,0.70);
     }
-    body:not([data-theme="dark"]) p{color:rgba(15,23,42,0.70)}
-    ul{margin:0 0 16px 18px}
-    li{
-      margin:8px 0;
-      color:rgba(255,255,255,0.72);
-      font-weight:300;
-      font-size:15px;
+    body:not([data-theme="dark"]) .postBody blockquote{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+      color:rgba(15,23,42,0.72);
     }
-    body:not([data-theme="dark"]) li{color:rgba(15,23,42,0.70)}
+    .postBody blockquote p{margin:0}
+
+    /* Inline code */
+    .postBody code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      padding:2px 7px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      white-space: break-spaces;
+    }
+    body:not([data-theme="dark"]) .postBody code{
+      border:1px solid rgba(15,23,42,0.12);
+      background: rgba(15,23,42,0.04);
+    }
+
+    /* Code blocks */
+    .postBody pre{
+      margin:16px 0;
+      padding:12px 12px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
+      line-height:1.7;
+    }
+    body:not([data-theme="dark"]) .postBody pre{
+      border:1px solid rgba(15,23,42,0.12);
+      background: rgba(15,23,42,0.04);
+    }
+    .postBody pre code{
+      border:none;
+      background:transparent;
+      padding:0;
+      border-radius:0;
+      white-space:pre;
+      display:block;
+      font-size:13px;
+      font-weight:500;
+      opacity:.95;
+    }
+
+    /* HR */
+    .postBody hr{
+      border:none;
+      height:1px;
+      background: rgba(255,255,255,0.10);
+      margin:22px 0;
+    }
+    body:not([data-theme="dark"]) .postBody hr{background: rgba(15,23,42,0.10)}
+
+    /* Images */
+    .postBody img{
+      max-width:100%;
+      height:auto;
+      display:block;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      margin:14px auto;
+    }
+    body:not([data-theme="dark"]) .postBody img{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+
+    /* Tables (mobile friendly scroll) */
+    .postBody table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      margin:16px 0;
+      overflow:hidden;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      display:block;              /* ✅ scroll enable */
+      max-width:100%;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+    body:not([data-theme="dark"]) .postBody table{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+    .postBody thead th{
+      text-align:left;
+      font-size:12px;
+      font-weight:800;
+      color:var(--text);
+      padding:10px 12px;
+      border-bottom:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+      white-space:nowrap;
+    }
+    body:not([data-theme="dark"]) .postBody thead th{
+      border-bottom:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.05);
+    }
+    .postBody tbody td{
+      padding:10px 12px;
+      font-size:13px;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      white-space:nowrap;
+    }
+    body:not([data-theme="dark"]) .postBody tbody td{
+      border-bottom:1px solid rgba(15,23,42,0.08);
+    }
+    .postBody tbody tr:last-child td{border-bottom:none}
+
+    /* Video / iframe embeds */
+    .postBody video{
+      width:100%;
+      max-width:100%;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      margin:14px 0;
+      display:block;
+    }
+    body:not([data-theme="dark"]) .postBody video{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+
+    /* Responsive embed wrapper (YouTube, etc.) */
+    .embedWrap{
+      position:relative;
+      width:100%;
+      padding-top:56.25%;
+      border-radius:18px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      margin:14px 0;
+    }
+    body:not([data-theme="dark"]) .embedWrap{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+    .embedWrap iframe{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      border:0;
+    }
+
     .divider{
       height:1px;
       background: rgba(255,255,255,0.10);
@@ -233,31 +466,15 @@
     }
     body:not([data-theme="dark"]) .divider{background: rgba(15,23,42,0.10)}
 
-    .note{
-      padding:12px 12px;
-      border:1px solid rgba(255,255,255,0.10);
-      background: rgba(255,255,255,0.04);
-      margin:18px 0 10px;
-      border-radius:16px;
-      color:rgba(255,255,255,0.68);
-      font-weight:300;
-      font-size:13px;
-      line-height:1.7;
-    }
-    body:not([data-theme="dark"]) .note{
-      border:1px solid rgba(15,23,42,0.10);
-      background: rgba(15,23,42,0.03);
-      color:rgba(15,23,42,0.70);
-    }
-
     .blockTitle{
       margin:44px 0 14px;
       font-size:18px;
-      font-weight:700;
+      font-weight:800;
       color:var(--text);
       letter-spacing:-0.2px;
     }
 
+    /* Comments & Cards (আগের মতোই) */
     .commentComposer{
       border:1px solid rgba(255,255,255,0.10);
       background: rgba(255,255,255,0.04);
@@ -290,7 +507,7 @@
     }
     .composerName{
       font-size:13px;
-      font-weight:500;
+      font-weight:600;
       color:var(--text);
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     }
@@ -345,7 +562,7 @@
       padding:8px 10px;border-radius:12px;
       font-family:inherit;
       font-size:12px;
-      font-weight:500;
+      font-weight:600;
     }
     body:not([data-theme="dark"]) .ghostBtn{color:rgba(15,23,42,0.70)}
     .ghostBtn:hover{background: rgba(255,255,255,0.08)}
@@ -361,7 +578,7 @@
       color:var(--text);
       font-family:inherit;
       font-size:12px;
-      font-weight:700;
+      font-weight:900;
     }
     body:not([data-theme="dark"]) .primaryBtn{
       background: rgba(15,23,42,0.08);
@@ -397,7 +614,7 @@
       background: rgba(15,23,42,0.04);
     }
     .cName{
-      font-size:13px;font-weight:500;color:var(--text);
+      font-size:13px;font-weight:600;color:var(--text);
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
       max-width:220px;
     }
@@ -442,7 +659,7 @@
 
     .loveCount{
       font-size:12px;
-      font-weight:500;
+      font-weight:600;
       color:rgba(255,255,255,0.62);
       min-width:10px;
       text-align:left;
@@ -495,7 +712,7 @@
     .relBody{padding:12px}
     .relTitle{
       font-size:13.5px;
-      font-weight:700;
+      font-weight:900;
       color:var(--text);
       line-height:1.35;
       margin-bottom:8px;
@@ -652,14 +869,19 @@
 
     <main class="content" id="trackRoot">
       <h1 id="postTop" class="toc-marker" data-title="{{ post['title'] }}">{{ post['title'] }}</h1>
+
       <section data-track="true" data-title="{{ post['title'] }}" id="intro">
         <div class="note" style="margin-top:12px">
           {{ post['intro'] }}
         </div>
+
+        <!-- ✅ Intro এবং Content আলাদা করার জন্য divider -->
+        <div class="introDivider" aria-hidden="true"></div>
       </section>
 
       <section data-track="true" data-title="Content">
-        <div class="post-content">
+        <!-- ✅ Markdown / rich HTML content wrapper -->
+        <div class="post-content postBody" id="postBody">
           {% autoescape false %}
             {{ content | replace('\n', '<br>') }}
           {% endautoescape %}
