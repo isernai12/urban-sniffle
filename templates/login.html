@@ -120,7 +120,7 @@
         </div>
 
         <div class="authBody">
-          <form method="post">
+          <form id="loginForm" method="post">
             <div class="field">
               <div class="label"><span data-lucide="mail"></span> Email</div>
               <input class="input" id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
@@ -133,7 +133,7 @@
 
             <div class="row">
               <label class="check">
-                <input id="remember" type="checkbox">
+                <input id="remember" name="remember" type="checkbox" value="1">
                 <span>Remember me</span>
               </label>
               <a class="link" href="#" onclick="alert('Demo: Forgot password page later'); return false;">Forgot password?</a>
@@ -156,4 +156,33 @@
       </section>
     </main>
   </div>
+  <script>
+    const rememberCheckbox = document.getElementById("remember");
+    const loginForm = document.getElementById("loginForm");
+    const emailInput = document.getElementById("email");
+
+    if (rememberCheckbox) {
+      const rememberValue = localStorage.getItem("writoRememberLogin");
+      rememberCheckbox.checked = rememberValue === "true";
+    }
+
+    if (emailInput) {
+      const storedEmail = localStorage.getItem("writoRememberEmail");
+      if (storedEmail) {
+        emailInput.value = storedEmail;
+      }
+    }
+
+    if (loginForm) {
+      loginForm.addEventListener("submit", () => {
+        const shouldRemember = rememberCheckbox && rememberCheckbox.checked;
+        localStorage.setItem("writoRememberLogin", shouldRemember ? "true" : "false");
+        if (shouldRemember && emailInput) {
+          localStorage.setItem("writoRememberEmail", emailInput.value.trim());
+        } else {
+          localStorage.removeItem("writoRememberEmail");
+        }
+      });
+    }
+  </script>
 {% endblock %}

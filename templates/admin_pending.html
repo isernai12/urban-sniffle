@@ -118,7 +118,7 @@
         <article class="postCard" data-post-title="{{ post['title'] }}">
           <div class="banner">
             {% if post['thumbnail'] %}
-              <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" alt="post banner" />
+              <img src="{{ post['thumbnail'] | image_url }}" alt="post banner" />
             {% else %}
               <img src="https://images.unsplash.com/photo-1526378722484-bd91ca387e72?auto=format&fit=crop&w=1200&q=60" alt="post banner" />
             {% endif %}
@@ -136,7 +136,7 @@
               <div class="writerLeft">
                 <div class="avatar">
                   {% if post['author_profile_pic'] %}
-                    <img src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}" alt="writer avatar" />
+                    <img src="{{ post['author_profile_pic'] | image_url(folder='profile') }}" alt="writer avatar" />
                   {% else %}
                     <span>{{ post['author_display_name'][:1] }}</span>
                   {% endif %}

@@ -25,7 +25,8 @@
             cursor:pointer;
             font-weight:700;
             font-size:13px;
-          ">
+          "
+        >
           {{ item.title }}
         </button>
       {% endfor %}
@@ -191,69 +192,300 @@
 
     .content{
       margin-top:14px;
-      line-height:1.95;
       padding-left:10px;
       padding-right:10px;
     }
 
+    /* --- ✅ TOC markers must not create vertical gaps --- */
+    .toc-marker{
+      display:block;
+      height:0 !important;
+      margin:0 !important;
+      padding:0 !important;
+      border:0 !important;
+    }
+
     h1{
-      margin:0 0 12px;
+      margin:0 0 10px;
       font-size:22px;
       letter-spacing:-0.3px;
       color:var(--text);
-      font-weight:700;
+      font-weight:900;
+      line-height:1.2;
     }
 
-    h2{
-      margin:46px 0 12px;
-      font-size:20px;
-      letter-spacing:-0.2px;
-      color:var(--text);
-      font-weight:700;
-    }
-    p{
-      margin:0 0 16px;
-      color:rgba(255,255,255,0.72);
-      font-weight:300;
-      font-size:15px;
-    }
-    body:not([data-theme="dark"]) p{color:rgba(15,23,42,0.70)}
-    ul{margin:0 0 16px 18px}
-    li{
-      margin:8px 0;
-      color:rgba(255,255,255,0.72);
-      font-weight:300;
-      font-size:15px;
-    }
-    body:not([data-theme="dark"]) li{color:rgba(15,23,42,0.70)}
-    .divider{
-      height:1px;
-      background: rgba(255,255,255,0.10);
-      margin:34px 0;
-    }
-    body:not([data-theme="dark"]) .divider{background: rgba(15,23,42,0.10)}
-
+    /* Intro note (tight) */
     .note{
       padding:12px 12px;
       border:1px solid rgba(255,255,255,0.10);
       background: rgba(255,255,255,0.04);
-      margin:18px 0 10px;
+      margin:10px 0 12px;
       border-radius:16px;
-      color:rgba(255,255,255,0.68);
+      color:rgba(255,255,255,0.70);
       font-weight:300;
       font-size:13px;
-      line-height:1.7;
+      line-height:1.6;
     }
     body:not([data-theme="dark"]) .note{
       border:1px solid rgba(15,23,42,0.10);
       background: rgba(15,23,42,0.03);
-      color:rgba(15,23,42,0.70);
+      color:rgba(15,23,42,0.72);
     }
 
-    .blockTitle{
-      margin:44px 0 14px;
-      font-size:18px;
+    /* Intro/Content separator */
+    .introDivider{
+      height:1px;
+      background: rgba(255,255,255,0.10);
+      margin:10px 0 12px;
+    }
+    body:not([data-theme="dark"]) .introDivider{background: rgba(15,23,42,0.10)}
+
+    /* --- ✅ PREMIUM + TIGHT TYPOGRAPHY FOR POST CONTENT --- */
+    .post-content{
+      font-size:15px;
+      font-weight:300;
+      line-height:1.72;          /* tighter */
+      color:rgba(255,255,255,0.72);
+      word-break:break-word;
+    }
+    body:not([data-theme="dark"]) .post-content{
+      color:rgba(15,23,42,0.72);
+    }
+
+    /* Tight block spacing */
+    .post-content > *{ margin:0 0 12px; }
+    .post-content > *:last-child{ margin-bottom:0; }
+
+    .post-content p{
+      margin:0 0 12px;
+      color:inherit;
+      font-size:15px;
+      font-weight:300;
+    }
+
+    /* Inline format support */
+    .post-content strong{font-weight:900;color:var(--text)}
+    .post-content em{font-style:italic;opacity:.95}
+    .post-content u{text-decoration: underline;text-underline-offset:3px}
+    .post-content s, .post-content del{opacity:.75}
+    .post-content mark{
+      padding:0 .2em;
+      border-radius:6px;
+      background: rgba(255,255,255,0.14);
+      color: var(--text);
+    }
+    body:not([data-theme="dark"]) .post-content mark{background: rgba(15,23,42,0.08)}
+
+    /* Links */
+    .post-content a{
+      color: var(--text);
+      font-weight:800;
+      text-decoration:none;
+      border-bottom:1px solid rgba(255,255,255,0.18);
+    }
+    body:not([data-theme="dark"]) .post-content a{
+      border-bottom:1px solid rgba(15,23,42,0.18);
+    }
+    .post-content a:active{opacity:.85}
+
+    /* Headings inside content (tight) */
+    .post-content h1,
+    .post-content h2,
+    .post-content h3,
+    .post-content h4{
+      color: var(--text);
+      font-weight:900;
+      letter-spacing:-0.2px;
+      margin:22px 0 10px;
+      line-height:1.22;
+    }
+    .post-content h2{font-size:20px}
+    .post-content h3{font-size:18px}
+    .post-content h4{font-size:16px}
+
+    /* Lists */
+    .post-content ul,
+    .post-content ol{
+      margin:0 0 12px 18px;
+      padding:0;
+    }
+    .post-content li{
+      margin:6px 0;
+      color:inherit;
+      font-weight:300;
+      font-size:15px;
+    }
+    .post-content li::marker{opacity:.75}
+
+    /* Blockquote */
+    .post-content blockquote{
+      margin:14px 0;
+      padding:12px 12px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.78);
+    }
+    body:not([data-theme="dark"]) .post-content blockquote{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+      color: rgba(15,23,42,0.74);
+    }
+    .post-content blockquote p{margin:0}
+
+    /* Code */
+    .post-content code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size: 13px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
       font-weight:700;
+    }
+    body:not([data-theme="dark"]) .post-content code{
+      border: 1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.04);
+    }
+
+    .post-content pre{
+      margin:14px 0;
+      padding:12px;
+      border-radius:18px;
+      overflow:auto;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+    }
+    body:not([data-theme="dark"]) .post-content pre{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+    .post-content pre code{
+      display:block;
+      padding:0;
+      border:none;
+      background:transparent;
+      font-size:13px;
+      font-weight:600;
+      line-height:1.65;
+      color: rgba(255,255,255,0.86);
+    }
+    body:not([data-theme="dark"]) .post-content pre code{
+      color: rgba(15,23,42,0.86);
+    }
+
+    /* Tables (mobile premium) */
+    .post-content .tableWrap{
+      width:100%;
+      overflow:auto;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      margin:14px 0;
+    }
+    body:not([data-theme="dark"]) .post-content .tableWrap{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+    .post-content table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:520px;
+    }
+    .post-content th, .post-content td{
+      padding:10px 12px;
+      text-align:left;
+      border-bottom:1px solid rgba(255,255,255,0.10);
+      font-size:13px;
+      font-weight:300;
+      color: rgba(255,255,255,0.78);
+      vertical-align:top;
+    }
+    body:not([data-theme="dark"]) .post-content th,
+    body:not([data-theme="dark"]) .post-content td{
+      border-bottom:1px solid rgba(15,23,42,0.10);
+      color: rgba(15,23,42,0.72);
+    }
+    .post-content th{
+      font-weight:900;
+      color: var(--text);
+      position:sticky;
+      top:0;
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(6px);
+    }
+    body:not([data-theme="dark"]) .post-content th{
+      background: rgba(15,23,42,0.03);
+    }
+    .post-content tr:last-child td{border-bottom:none}
+
+    /* Media */
+    .post-content img{
+      max-width:100%;
+      height:auto;
+      display:block;
+      border-radius:18px;
+      margin:14px 0;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+    }
+    body:not([data-theme="dark"]) .post-content img{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+
+    .post-content video{
+      width:100%;
+      max-width:100%;
+      border-radius:18px;
+      margin:14px 0;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      display:block;
+    }
+    body:not([data-theme="dark"]) .post-content video{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+
+    .post-content iframe{
+      width:100%;
+      max-width:100%;
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:18px;
+      background: rgba(255,255,255,0.04);
+      margin:14px 0;
+      display:block;
+      aspect-ratio: 16 / 9;
+      height:auto;
+    }
+    body:not([data-theme="dark"]) .post-content iframe{
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(15,23,42,0.03);
+    }
+
+    .post-content hr{
+      border:none;
+      height:1px;
+      background: rgba(255,255,255,0.10);
+      margin:14px 0;
+    }
+    body:not([data-theme="dark"]) .post-content hr{
+      background: rgba(15,23,42,0.10);
+    }
+
+    .divider{
+      height:1px;
+      background: rgba(255,255,255,0.10);
+      margin:22px 0;
+    }
+    body:not([data-theme="dark"]) .divider{background: rgba(15,23,42,0.10)}
+
+    .blockTitle{
+      margin:32px 0 12px;
+      font-size:18px;
+      font-weight:900;
       color:var(--text);
       letter-spacing:-0.2px;
     }
@@ -361,7 +593,7 @@
       color:var(--text);
       font-family:inherit;
       font-size:12px;
-      font-weight:700;
+      font-weight:900;
     }
     body:not([data-theme="dark"]) .primaryBtn{
       background: rgba(15,23,42,0.08);
@@ -407,7 +639,7 @@
     .cBody{
       font-size:13px;
       font-weight:300;
-      line-height:1.7;
+      line-height:1.65;
       color:rgba(255,255,255,0.72);
       word-break:break-word;
     }
@@ -452,7 +684,7 @@
     .miniIconBtn[data-on="true"] i{color:#ff4d6d;}
     body:not([data-theme="dark"]) .miniIconBtn[data-on="true"] i{color:#ff3b66;}
 
-    .relatedWrap{margin-top:44px}
+    .relatedWrap{margin-top:34px}
     .relatedGrid{
       margin-top:12px;
       display:grid;
@@ -495,7 +727,7 @@
     .relBody{padding:12px}
     .relTitle{
       font-size:13.5px;
-      font-weight:700;
+      font-weight:900;
       color:var(--text);
       line-height:1.35;
       margin-bottom:8px;
@@ -580,7 +812,7 @@
       <div class="thumb" aria-label="Thumbnail">
         {% if post['thumbnail'] %}
           <img
-            src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}"
+            src="{{ post['thumbnail'] | image_url }}"
             alt="{{ post['title'] }} thumbnail"
             loading="lazy"
           />
@@ -598,7 +830,7 @@
           {% if post['author_profile_pic'] %}
             <img
               class="avatarImg"
-              src="{{ url_for('static', filename='profile_uploads/' + post['author_profile_pic']) }}"
+              src="{{ post['author_profile_pic'] | image_url(folder='profile') }}"
               alt="{{ post['author_display_name'] }}"
               loading="lazy"
             />
@@ -652,11 +884,14 @@
 
     <main class="content" id="trackRoot">
       <h1 id="postTop" class="toc-marker" data-title="{{ post['title'] }}">{{ post['title'] }}</h1>
+
       <section data-track="true" data-title="{{ post['title'] }}" id="intro">
         <div class="note" style="margin-top:12px">
           {{ post['intro'] }}
         </div>
       </section>
+
+      <div class="introDivider" aria-hidden="true"></div>
 
       <section data-track="true" data-title="Content">
         <div class="post-content">
@@ -702,7 +937,7 @@
               {% if current_user.profile_pic %}
                 <img
                   class="meAvatar"
-                  src="{{ url_for('static', filename='profile_uploads/' + current_user.profile_pic) }}"
+                  src="{{ current_user.profile_pic | image_url(folder='profile') }}"
                   alt="{{ current_user.display_name }}"
                   loading="lazy"
                 />
@@ -797,7 +1032,7 @@
             <a class="relCard" href="{{ url_for('post_detail', post_id=related['id'], slug=related['slug']) }}" role="button">
               <div class="relImg">
                 {% if related['thumbnail'] %}
-                  <img src="{{ url_for('static', filename='uploads/' + related['thumbnail']) }}" alt="{{ related['title'] }}" loading="lazy">
+                  <img src="{{ related['thumbnail'] | image_url }}" alt="{{ related['title'] }}" loading="lazy">
                 {% else %}
                   <img src="https://picsum.photos/800/450?random={{ related['id'] }}" alt="{{ related['title'] }}" loading="lazy">
                 {% endif %}
@@ -994,5 +1229,18 @@
   window.jumpToSection = jumpToSection;
   window.openReportModal = openReportModal;
   window.closeReportModal = closeReportModal;
+
+  /* Wrap tables for mobile horizontal scroll (premium) */
+  (function wrapTables(){
+    const root = document.querySelector(".post-content");
+    if (!root) return;
+    root.querySelectorAll("table").forEach(tbl => {
+      if (tbl.closest(".tableWrap")) return;
+      const wrap = document.createElement("div");
+      wrap.className = "tableWrap";
+      tbl.parentNode.insertBefore(wrap, tbl);
+      wrap.appendChild(tbl);
+    });
+  })();
 </script>
 {% endblock %}

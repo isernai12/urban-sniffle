@@ -1,51 +1,168 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <div class="post">
-        <h1>পোস্ট এডিট করুন</h1>
-        <form method="post" enctype="multipart/form-data">
-            
-            <label>শিরোনাম</label>
-            <input type="text" name="title" value="{{ post['title'] }}" required>
+  <style>
+    .editWrap{
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+    .editCard{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 12px 24px rgba(15,23,42,0.06);
+    }
+    .editTitle{
+      font-size: 20px;
+      font-weight: 800;
+      margin: 0 0 12px;
+    }
+    .editSub{
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+    .field{
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .label{
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .input, .textarea{
+      width: 100%;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.6);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      color: var(--text);
+    }
+    body[data-theme="dark"] .input,
+    body[data-theme="dark"] .textarea{
+      background: rgba(255,255,255,0.06);
+    }
+    .textarea{
+      min-height: 180px;
+      resize: vertical;
+    }
+    .gridTwo{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+    .imageBox{
+      background: var(--soft);
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px dashed var(--border);
+    }
+    .imagePreview{
+      width: 100%;
+      max-height: 180px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .btnRow{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .btn{
+      border-radius: 999px;
+      border: 1px solid var(--softBorder);
+      padding: 10px 16px;
+      font-weight: 700;
+      font-size: 13px;
+      background: rgba(255,255,255,0.4);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .btn.primary{
+      background: #2563eb;
+      color: #fff;
+      border: 1px solid rgba(37,99,235,0.4);
+    }
+    .btn.secondary{
+      background: #64748b;
+      color: #fff;
+      border: 1px solid rgba(100,116,139,0.4);
+    }
+  </style>
 
-            <label>ক্যাটাগরি</label>
-            <input type="text" name="category" value="{{ post['category'] }}" list="cat-list" required>
-            <datalist id="cat-list">
-                <option value="Python">
-                <option value="Web Development">
-                <option value="Tech News">
-            </datalist>
+  <main class="editWrap">
+    <section class="editCard">
+      <h1 class="editTitle">পোস্ট এডিট করুন</h1>
+      <div class="editSub">শিরোনাম, ক্যাটাগরি, ইন্ট্রো, কন্টেন্ট এবং ছবি সবই এখান থেকে আপডেট করতে পারবেন।</div>
 
-            <label>ইন্ট্রোডাকশন</label>
-            <input type="text" name="intro" value="{{ post['intro'] }}" required>
-            
-            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                <h3 style="margin-top: 0; font-size: 1rem; color: #475569;">ছবি পরিবর্তন (ঐচ্ছিক)</h3>
-                
-                <div style="margin-bottom: 10px;">
-                    <label>বর্তমান নরমাল ছবি:</label>
-                    <img src="{{ url_for('static', filename='uploads/' + post['thumbnail']) }}" style="height: 60px; display: block; margin-bottom: 5px;">
-                    <input type="file" name="thumbnail" accept="image/*">
-                </div>
+      <form method="post" enctype="multipart/form-data">
+        <div class="field">
+          <label class="label" for="title">শিরোনাম</label>
+          <input class="input" id="title" type="text" name="title" value="{{ post['title'] }}" required>
+        </div>
 
-                <div>
-                    <label>বর্তমান ট্রেন্ডিং ছবি:</label>
-                    {% if post['trending_thumbnail'] %}
-                        <img src="{{ url_for('static', filename='uploads/' + post['trending_thumbnail']) }}" style="height: 60px; display: block; margin-bottom: 5px;">
-                    {% else %}
-                        <p style="font-size: 0.8em; color: #666;">(নেই)</p>
-                    {% endif %}
-                    <input type="file" name="trending_thumbnail" accept="image/*">
-                </div>
-            </div>
+        <div class="field">
+          <label class="label" for="category">ক্যাটাগরি</label>
+          <input class="input" id="category" type="text" name="category" value="{{ post['category'] }}" list="cat-list" required>
+          <datalist id="cat-list">
+            <option value="Python">
+            <option value="Web Development">
+            <option value="Data Science">
+            <option value="AI">
+            <option value="Mobile">
+            <option value="Design">
+            <option value="Tech News">
+            <option value="Cyber Security">
+            <option value="DevOps">
+            <option value="Career">
+          </datalist>
+        </div>
 
-            <label>বিস্তারিত (কন্টেন্টে [toc:..] ব্যবহার করলে নতুন করে TOC তৈরি হবে)</label>
-            <textarea name="content" rows="15" required>{{ post['content'] }}</textarea>
-            
-            <div style="display: grid; gap: 10px;">
-                <button type="submit" name="action" value="draft" class="sub-btn" style="background: #64748b;">ড্রাফট হিসেবে সেভ</button>
-                <button type="submit" name="action" value="submit" class="sub-btn" style="background: #2563eb;">এডমিনের কাছে সাবমিট</button>
-            </div>
-        </form>
-    </div>
+        <div class="field">
+          <label class="label" for="intro">ইন্ট্রোডাকশন</label>
+          <textarea class="textarea" id="intro" name="intro" required>{{ post['intro'] }}</textarea>
+        </div>
+
+        <div class="field">
+          <label class="label" for="content">বিস্তারিত (কন্টেন্টে [toc:..] ব্যবহার করলে নতুন করে TOC তৈরি হবে)</label>
+          <textarea class="textarea" id="content" name="content" required>{{ post['content'] }}</textarea>
+        </div>
+
+        <div class="gridTwo">
+          <div class="imageBox">
+            <div class="label">বর্তমান নরমাল ছবি</div>
+            {% if post['thumbnail'] %}
+              <img class="imagePreview" src="{{ post['thumbnail'] | image_url }}" alt="Normal thumbnail">
+            {% else %}
+              <div class="editSub">(কোনো ছবি নেই)</div>
+            {% endif %}
+            <input type="file" name="thumbnail" accept="image/*">
+          </div>
+
+          <div class="imageBox">
+            <div class="label">বর্তমান ট্রেন্ডিং ছবি (ঐচ্ছিক)</div>
+            {% if post['trending_thumbnail'] %}
+              <img class="imagePreview" src="{{ post['trending_thumbnail'] | image_url }}" alt="Trending thumbnail">
+            {% else %}
+              <div class="editSub">(কোনো ছবি নেই)</div>
+            {% endif %}
+            <input type="file" name="trending_thumbnail" accept="image/*">
+          </div>
+        </div>
+
+        <div class="btnRow">
+          <button type="submit" name="action" value="draft" class="btn secondary">ড্রাফট হিসেবে সেভ</button>
+          <button type="submit" name="action" value="submit" class="btn primary">এডমিনের কাছে সাবমিট</button>
+        </div>
+      </form>
+    </section>
+  </main>
 {% endblock %}
